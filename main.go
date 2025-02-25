@@ -57,6 +57,7 @@ func main() {
 	first := parser.First(cfg, grammar)
 	follow := parser.Follow(cfg, grammar, first)
 
+	fmt.Println("FOLLOW")
 	fmt.Println(follow)
 
 }
