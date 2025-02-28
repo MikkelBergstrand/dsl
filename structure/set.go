@@ -50,6 +50,8 @@ func (s Set[K]) List() []K {
 	return keys
 }
 
+
+
 func (s Set[K]) Union(other Set[K]) Set[K]{
 	for k := range other.elements {
 		s.elements[k] = struct{}{}

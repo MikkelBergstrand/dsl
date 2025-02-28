@@ -2,54 +2,51 @@ package tokens
 
 import (
 	"fmt"
+	"strconv"
 )
 
 type ItemType int
 
+// Constant types across all grammars
+const (
+	ItemError   ItemType = 10000
+	ItemEpsilon ItemType = 10001
+	ItemEOF     ItemType = 10002
+)
+
 const (
 	//TERMINALS
-	ItemError ItemType = iota
-	ItemText
+	ItemText ItemType = iota + 1
 	ItemNumber
 	ItemOpPlus
 	ItemOpMinus
 	ItemOpMult
 	ItemOpDiv
 	ItemIdentifier // starts with [a-zA-Z_], followed by [a-zA-Z0-9_]
-	ItemSemicolon
 	ItemParOpen
 	ItemParClosed
+	ItemSemicolon
+)
 
-	ItemA
-	ItemB
-
-	//NON-TERMINALS
-	NT_BEGIN ItemType = iota + 1000
+const (
+	//NON-Terminals
+	NTGoal ItemType = iota + 1001
 	NTExpr
 	NTTerm
 	NTFactor
-
-	NT_A1
-	NT_B2
-	NT_GOAL
-
-	NT_TERM
-
-	ItemEpsilon = -1
-	ItemEOF     = -2
 )
-
-var NT_Count = NT_TERM
 
 type Grammar struct {
 	Terminals    []ItemType
 	NonTerminals []ItemType
+	StartSymbol  ItemType
 }
 
-func NewTokenID(item ItemType) ItemType {
-	temp := NT_Count
-	NT_Count = NT_Count + 1
+func (grammar *Grammar) NewTokenID(item ItemType) ItemType {
+	temp := (ItemType)(grammar.NonTerminals[len(grammar.NonTerminals)-1] + 1)
+	fmt.Println(temp)
 	_new_str[temp] = item.String() + "'"
+	grammar.NonTerminals = append(grammar.NonTerminals, temp)
 	return temp
 }
 
@@ -78,7 +75,7 @@ func (l ItemType) IsTerminal() bool {
 }
 
 func (l ItemType) IsNonTerminal() bool {
-	return l >= 1000
+	return l >= 1000 && l < 10000
 }
 
 var _new_str map[ItemType]string = make(map[ItemType]string)
@@ -91,12 +88,8 @@ func (i ItemType) String() string {
 	}
 
 	switch i {
-	case NT_GOAL:
+	case NTGoal:
 		return "Goal"
-	case NT_A1:
-		return "A1"
-	case NT_B2:
-		return "B2"
 	case NTExpr:
 		return "Expr"
 	case NTTerm:
@@ -111,22 +104,20 @@ func (i ItemType) String() string {
 		return "+"
 	case ItemOpMult:
 		return "*"
-	case ItemA:
-		return "a"
-	case ItemB:
-		return "b"
 	case ItemEpsilon:
 		return "eps"
-	case ItemParClosed:
-		return ")"
-	case ItemParOpen:
-		return "("
 	case ItemIdentifier:
 		return "name"
 	case ItemNumber:
 		return "num"
 	case ItemEOF:
 		return "eof"
+	case ItemParOpen:
+		return "("
+	case ItemParClosed:
+		return ")"
+	case ItemError:
+		return "err"
 	}
-	return string(int(i))
+	return strconv.Itoa(int(i))
 }

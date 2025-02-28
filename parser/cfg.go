@@ -10,13 +10,18 @@ import (
 type cfg_alternative []tokens.ItemType
 type cfg_rule []cfg_alternative
 
+type cfg_pattern struct {
+	A tokens.ItemType
+	B cfg_alternative
+}
+
 type ParserVariable int
 
 type CFG map[tokens.ItemType]cfg_rule
 
 func CreateCFG() CFG {
 	cfg := make(CFG)
-	cfg[tokens.NT_GOAL] = cfg_rule{
+	cfg[tokens.NTGoal] = cfg_rule{
 		cfg_alternative{tokens.NTExpr},
 	}
 	cfg[tokens.NTExpr] = cfg_rule{
@@ -36,22 +41,6 @@ func CreateCFG() CFG {
 		cfg_alternative{tokens.ItemIdentifier},
 	}
 
-	return cfg
-}
-
-func CreateTestCFG() CFG {
-	cfg := make(CFG)
-	cfg[tokens.NT_GOAL] = cfg_rule{
-		cfg_alternative{tokens.NT_A1},
-	}
-	cfg[tokens.NT_A1] = cfg_rule{
-		cfg_alternative{tokens.NT_B2, tokens.ItemA},
-		cfg_alternative{tokens.ItemA},
-	}
-
-	cfg[tokens.NT_B2] = cfg_rule{
-		cfg_alternative{tokens.NT_A1, tokens.ItemB},
-	}
 	return cfg
 }
 
@@ -97,8 +86,7 @@ func EliminateLeftRecursion(cfg CFG, grammar *tokens.Grammar) CFG {
 		// We found an option of the form E -> E a. Must recurse.
 		if len(A) > 0 {
 			// Create a new token from E, E' (E tilde)
-			new_token := tokens.NewTokenID(keys[i])
-			grammar.NonTerminals = append(grammar.NonTerminals, new_token)
+			new_token := grammar.NewTokenID(keys[i])
 
 			// Set up so that E' -> (a E' | epsilon)
 			A = rule_append(A, []tokens.ItemType{new_token})

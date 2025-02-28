@@ -45,19 +45,25 @@ func main() {
 			tokens.ItemParOpen,
 		},
 		NonTerminals: []tokens.ItemType{
-			tokens.NT_GOAL,
+			tokens.NTGoal,
 			tokens.NTExpr,
 			tokens.NTTerm,
 			tokens.NTFactor,
 		},
+		StartSymbol: tokens.NTGoal,
 	}
 	cfg := parser.CreateCFG()
 	cfg = parser.EliminateLeftRecursion(cfg, &grammar)
 
 	first := parser.First(cfg, grammar)
+
+	fmt.Println("FIRST")
+	fmt.Println(first)
+
 	follow := parser.Follow(cfg, grammar, first)
 
 	fmt.Println("FOLLOW")
 	fmt.Println(follow)
 
+	parser.LLTable(grammar, cfg, first, follow)
 }

@@ -11,6 +11,8 @@ func Follow(cfg CFG, grammar tokens.Grammar, first FirstSet) FirstSet {
 		follow[term] = *structure.NewSet[tokens.ItemType]()
 	}
 
+	follow[grammar.StartSymbol].Add(tokens.ItemEOF)
+
 	changing := true
 	for changing {
 		changing = false
