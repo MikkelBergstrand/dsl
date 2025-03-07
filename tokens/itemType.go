@@ -2,6 +2,7 @@ package tokens
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 )
 
@@ -16,8 +17,7 @@ const (
 
 const (
 	//TERMINALS
-	ItemText ItemType = iota + 1
-	ItemNumber
+	ItemNumber ItemType = iota + 1
 	ItemOpPlus
 	ItemOpMinus
 	ItemOpMult
@@ -26,6 +26,7 @@ const (
 	ItemParOpen
 	ItemParClosed
 	ItemSemicolon
+	ItemText
 )
 
 const (
@@ -36,10 +37,32 @@ const (
 	NTFactor
 )
 
+const (
+	TItemParOpen = iota + 1
+	TItemParClosed
+)
+const (
+	NTTGoal ItemType = iota + 1001
+	NTTList
+	NTTPair
+)
+
 type Grammar struct {
 	Terminals    []ItemType
 	NonTerminals []ItemType
 	StartSymbol  ItemType
+}
+
+func (grammar *Grammar) MapToArrayindex(item ItemType) int {
+	if item.IsTerminal() {
+		return int(item) - 1
+	} else if item.IsNonTerminal() {
+		return int(item) - 1002	} else if item == ItemEOF {
+		return len(grammar.Terminals)
+	}
+
+	log.Fatalf("Attempted to store %s in an array!", item.String())
+	panic("See log")
 }
 
 func (grammar *Grammar) NewTokenID(item ItemType) ItemType {
@@ -88,6 +111,19 @@ func (i ItemType) String() string {
 	}
 
 	switch i {
+	case NTTGoal:
+		return "Goal"
+	case NTTList:
+		return "List"
+	case NTTPair:
+		return "Pair"
+	case TItemParClosed:
+		return ")"
+	case TItemParOpen:
+		return "("
+	}
+
+	switch i {
 	case NTGoal:
 		return "Goal"
 	case NTExpr:
@@ -118,6 +154,8 @@ func (i ItemType) String() string {
 		return ")"
 	case ItemError:
 		return "err"
+	case ItemSemicolon:
+		return ";"
 	}
 	return strconv.Itoa(int(i))
 }

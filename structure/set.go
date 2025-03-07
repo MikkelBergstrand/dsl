@@ -1,12 +1,17 @@
 package structure
 
+import (
+	"cmp"
+	"sort"
+)
+
 // Set is a collection of unique elements
-type Set[K comparable] struct {
+type Set[K cmp.Ordered] struct {
 	elements map[K]struct{}
 }
 
 // NewSet creates a new set
-func NewSet[K comparable]() *Set[K] {
+func NewSet[K cmp.Ordered]() *Set[K] {
 	return &Set[K]{
 		elements: make(map[K]struct{}),
 	}
@@ -21,13 +26,15 @@ func (s Set[K]) Copy() Set[K] {
 }
 
 // Add inserts an element into the set
-func (s Set[K]) Add(value K) {
+func (s Set[K]) Add(value K) Set[K] {
 	s.elements[value] = struct{}{}
+	return s
 }
 
 // Remove deletes an element from the set
-func (s Set[K]) Remove(value K) {
+func (s Set[K]) Remove(value K) Set[K] {
 	delete(s.elements, value)
+	return s
 }
 
 // Contains checks if an element is in the set
@@ -50,11 +57,19 @@ func (s Set[K]) List() []K {
 	return keys
 }
 
+func (s Set[K]) SortedList() []K {
+	ret := s.List()
+	sort.Slice(ret, func(i, j int) bool { return cmp.Compare(ret[i], ret[j]) > 0 })
+	return ret
+}
 
-
-func (s Set[K]) Union(other Set[K]) Set[K]{
+func (s Set[K]) Union(other Set[K]) Set[K] {
 	for k := range other.elements {
 		s.elements[k] = struct{}{}
 	}
 	return s
+}
+
+func (s Set[K]) Elements() map[K]struct{} {
+	return s.elements
 }

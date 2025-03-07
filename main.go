@@ -19,16 +19,19 @@ func main() {
 	_, ch := scanner.Lex("test_lexer", string(file_contents))
 
 	_exit := false
+	word_stream := make([]tokens.Lexeme, 0)
 	for !_exit {
 		c := <-ch
 		switch c.ItemType {
 		case tokens.ItemEOF:
+			word_stream = append(word_stream, c)
 			_exit = true
 			break
 		case tokens.ItemError:
 			log.Fatal(c)
 			return
 		default:
+			word_stream = append(word_stream, c)
 			fmt.Println(c)
 		}
 	}
@@ -41,8 +44,9 @@ func main() {
 			tokens.ItemOpMult,
 			tokens.ItemOpDiv,
 			tokens.ItemIdentifier,
-			tokens.ItemParClosed,
 			tokens.ItemParOpen,
+			tokens.ItemParClosed,
+			tokens.ItemSemicolon,
 		},
 		NonTerminals: []tokens.ItemType{
 			tokens.NTGoal,
@@ -52,8 +56,22 @@ func main() {
 		},
 		StartSymbol: tokens.NTGoal,
 	}
-	cfg := parser.CreateCFG()
-	cfg = parser.EliminateLeftRecursion(cfg, &grammar)
+
+	grammar = tokens.Grammar{
+		Terminals: []tokens.ItemType{
+			tokens.TItemParOpen,
+			tokens.TItemParClosed,
+		},
+		NonTerminals: []tokens.ItemType{
+			tokens.NTTGoal,
+			tokens.NTTList,
+			tokens.NTTPair,
+		},
+		StartSymbol: tokens.NTTGoal,
+	}
+	cfg := parser.CreateTestCFG()
+	fmt.Println(cfg)
+	//cfg = parser.EliminateLeftRecursion(cfg, &grammar)
 
 	first := parser.First(cfg, grammar)
 
@@ -65,5 +83,20 @@ func main() {
 	fmt.Println("FOLLOW")
 	fmt.Println(follow)
 
-	parser.LLTable(grammar, cfg, first, follow)
+	action, _goto := parser.CreateLRTable(grammar, cfg, first)
+	//fmt.Println(closure.String(cfg))
+
+	/*ll_table := parser.MakeLLTable(grammar, cfg, first, follow)
+	//(ll_parser := parser.NewParser(grammar, ll_table)
+
+	*/
+	words := make(chan tokens.Lexeme)
+	go func() {
+		words <- tokens.Lexeme{ItemType: tokens.TItemParOpen, Value: "("}
+		words <- tokens.Lexeme{ItemType: tokens.TItemParOpen, Value: "("}
+		words <- tokens.Lexeme{ItemType: tokens.TItemParClosed, Value: "("}
+		words <- tokens.Lexeme{ItemType: tokens.ItemEOF,  Value: ""}
+	}()
+
+	parser.LRParser(action, _goto, words, cfg, grammar)
 }

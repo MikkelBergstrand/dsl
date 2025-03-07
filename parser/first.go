@@ -41,34 +41,36 @@ func First(cfg CFG, grammar tokens.Grammar) FirstSet {
 	changing := true
 	for changing {
 		changing = false
-		for lhs, rule := range cfg {
-			for _, alt := range rule {
-				rhs := firstSet[alt[0]].Copy()
-				rhs.Remove(tokens.ItemEpsilon)
-				trailing := true
+		for _, rule := range cfg.Rules() {
+			lhs := rule.A
+			alt := rule.B
 
-				for i := 0; i < len(alt)-1; i++ {
-					if firstSet[alt[i]].Contains(tokens.ItemEpsilon) {
-						epsilonAlreadyPresent := rhs.Contains(tokens.ItemEpsilon)
-						rhs.Union(firstSet[alt[i+1]])
-						if !epsilonAlreadyPresent {
-							rhs.Remove(tokens.ItemEpsilon)
-						}
-					} else {
-						trailing = false
-						break
+			rhs := firstSet[alt[0]].Copy().Remove(tokens.ItemEpsilon)
+			trailing := true
+
+			for i := 0; i < len(alt)-1; i++ {
+				if firstSet[alt[i]].Contains(tokens.ItemEpsilon) {
+					epsilonAlreadyPresent := rhs.Contains(tokens.ItemEpsilon)
+					rhs.Union(firstSet[alt[i+1]])
+					if !epsilonAlreadyPresent {
+						rhs.Remove(tokens.ItemEpsilon)
 					}
+				} else {
+					trailing = false
+					break
 				}
+			}
 
-				if trailing && firstSet[alt[len(alt)-1]].Contains(tokens.ItemEpsilon) {
-					rhs.Add(tokens.ItemEpsilon)
-				}
+			if trailing && firstSet[alt[len(alt)-1]].Contains(tokens.ItemEpsilon) {
+				rhs.Add(tokens.ItemEpsilon)
+			}
 
-				prevCount := firstSet[lhs].Size()
-				firstSet[lhs].Union(rhs)
+			prevCount := firstSet[lhs].Size()
+			firstSet[lhs].Union(rhs)
 
-				// Compare size of set before and after union, determine if FIRST is still changing
-				changing = prevCount != firstSet[lhs].Size()
+			// Compare size of set before and after union, determine if FIRST is still changing
+			if !changing && prevCount != firstSet[lhs].Size() {
+				changing = true
 			}
 		}
 	}
