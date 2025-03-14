@@ -158,7 +158,7 @@ func EliminateLeftRecursion(cfg CFG, grammar *tokens.Grammar) CFG {
 		// We found an option of the form E -> E a. Must recurse.
 		if len(A) > 0 {
 			// Create a new token from E, E' (E tilde)
-			new_token := grammar.NewTokenID(keys[i])
+			new_token := grammar.NewCategoryID(keys[i])
 
 			// Set up so that E' -> (a E' | epsilon)
 			A = rule_append(A, []tokens.ItemType{new_token})

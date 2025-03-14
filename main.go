@@ -21,10 +21,10 @@ func main() {
 	_, scanner_stream := scanner.Lex("test_lexer", string(file_contents))
 
 	_exit := false
-	word_stream := make([]tokens.Lexeme, 0)
+	word_stream := make([]tokens.Token, 0)
 	for !_exit {
 		c := <-scanner_stream
-		switch c.ItemType {
+		switch c.Category {
 		case tokens.ItemEOF:
 			word_stream = append(word_stream, c)
 			_exit = true
@@ -69,9 +69,9 @@ func main() {
 	first := parser.First(cfg, grammar)
 	//follow := parser.Follow(cfg, grammar, first)
 
-	action, _goto := parser.CreateLRTable(grammar, cfg, first)
+	parser := parser.CreateLRParser(grammar, cfg, first)
 
-	words := make(chan tokens.Lexeme)
+	words := make(chan tokens.Token)
 	go func() {
 		for i := range word_stream {
 			words <- word_stream[i]
@@ -89,7 +89,7 @@ func main() {
 		}
 	}()
 
-	err = parser.LRParser(action, _goto, words, cfg, grammar, emitter, &storage)
+	err = parser.Parse(words, cfg, grammar, emitter, &storage)
 	if err != nil {
 		log.Fatal(err)
 	}

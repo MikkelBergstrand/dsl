@@ -14,18 +14,18 @@ type lexer struct {
 	start int
 	pos   int
 	width int
-	items chan tokens.Lexeme
+	items chan tokens.Token
 }
 
 const eof rune = '\x00' // necessary in 2025?
 
 type stateFn func(*lexer) stateFn
 
-func Lex(name string, input string) (*lexer, chan tokens.Lexeme) {
+func Lex(name string, input string) (*lexer, chan tokens.Token) {
 	l := &lexer{
 		name:  name,
 		input: input,
-		items: make(chan tokens.Lexeme),
+		items: make(chan tokens.Token),
 	}
 	go l.run()
 	return l, l.items
@@ -39,7 +39,7 @@ func (l *lexer) run() {
 }
 
 func (l *lexer) emit(t tokens.ItemType) {
-	l.items <- tokens.Lexeme{ItemType: t, Value: l.input[l.start:l.pos]}
+	l.items <- tokens.Token{Category: t, Lexeme: l.input[l.start:l.pos]}
 	l.start = l.pos
 }
 
@@ -92,9 +92,9 @@ func (l *lexer) acceptRegex(valid string) {
 }
 
 func (l *lexer) errorf(format string, args ...interface{}) stateFn {
-	l.items <- tokens.Lexeme{
-		ItemType: tokens.ItemError,
-		Value:    fmt.Sprintf(format, args...),
+	l.items <- tokens.Token{
+		Category: tokens.ItemError,
+		Lexeme:   fmt.Sprintf(format, args...),
 	}
 	return nil
 }

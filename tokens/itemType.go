@@ -69,7 +69,7 @@ func (grammar *Grammar) MapToArrayindex(item ItemType) int {
 	panic("See log")
 }
 
-func (grammar *Grammar) NewTokenID(item ItemType) ItemType {
+func (grammar *Grammar) NewCategoryID(item ItemType) ItemType {
 	temp := (ItemType)(grammar.NonTerminals[len(grammar.NonTerminals)-1] + 1)
 	fmt.Println(temp)
 	_new_str[temp] = item.String() + "'"
@@ -77,24 +77,24 @@ func (grammar *Grammar) NewTokenID(item ItemType) ItemType {
 	return temp
 }
 
-type Lexeme struct {
-	ItemType ItemType
-	Value    string
+type Token struct {
+	Category ItemType
+	Lexeme   string
 }
 
-func (l Lexeme) String() string {
-	switch l.ItemType {
+func (l Token) String() string {
+	switch l.Category {
 	case ItemEOF:
 		return "EOF"
 	case ItemError:
-		return l.Value
+		return l.Lexeme
 	}
 
-	if len(l.Value) > 50 {
-		return fmt.Sprintf("%d %s", int(l.ItemType), l.Value[:50])
+	if len(l.Lexeme) > 50 {
+		return fmt.Sprintf("%d %s", int(l.Category), l.Lexeme[:50])
 	}
 
-	return fmt.Sprintf("%d %q", int(l.ItemType), l.Value)
+	return fmt.Sprintf("%d %q", int(l.Category), l.Lexeme)
 }
 
 func (l ItemType) IsTerminal() bool {

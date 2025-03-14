@@ -176,7 +176,12 @@ type Action struct {
 type ActionTable [][]Action
 type GotoTable [][]int
 
-func CreateLRTable(grammar tokens.Grammar, cfg CFG, first FirstSet) (ActionTable, GotoTable) {
+type LRParser struct {
+	ActionTable ActionTable
+	GotoTable   GotoTable
+}
+
+func CreateLRParser(grammar tokens.Grammar, cfg CFG, first FirstSet) LRParser {
 	closures := computeClosures(grammar, cfg, first)
 
 	type goto_key struct {
@@ -257,10 +262,13 @@ func CreateLRTable(grammar tokens.Grammar, cfg CFG, first FirstSet) (ActionTable
 			}
 		}
 	}
-	return actionTable, gotoTable
+	return LRParser{
+		ActionTable: actionTable,
+		GotoTable:   gotoTable,
+	}
 }
 
-func LRParser(actionTable ActionTable, gotoTable GotoTable, words <-chan tokens.Lexeme, cfg CFG, grammar tokens.Grammar,
+func (parser *LRParser) Parse(words <-chan tokens.Token, cfg CFG, grammar tokens.Grammar,
 	emitter chan instructionset.Instruction, storage *storage.Storage) error {
 	type stack_state struct {
 		symbol tokens.ItemType
@@ -272,11 +280,14 @@ func LRParser(actionTable ActionTable, gotoTable GotoTable, words <-chan tokens.
 	stack.Push(stack_state{tokens.ItemError, -1, nil})
 	stack.Push(stack_state{grammar.StartSymbol, 0, nil})
 
+	actionTable := parser.ActionTable
+	gotoTable := parser.GotoTable
+
 	word := <-words
 
 	for {
 		state := stack.Peek()
-		action := actionTable[state.state][grammar.MapToArrayindex(word.ItemType)]
+		action := actionTable[state.state][grammar.MapToArrayindex(word.Category)]
 
 		switch action.Type {
 		case ACTION_REDUCE:
@@ -297,10 +308,10 @@ func LRParser(actionTable ActionTable, gotoTable GotoTable, words <-chan tokens.
 			}
 			stack.Push(stack_state{rule.A, _goto, value})
 		case ACTION_SHIFT:
-			stack.Push(stack_state{word.ItemType, action.Value, word.Value})
+			stack.Push(stack_state{word.Category, action.Value, word.Lexeme})
 			word = <-words
 		case ACTION_ACCEPT:
-			if word.ItemType == tokens.ItemEOF {
+			if word.Category == tokens.ItemEOF {
 				return nil // success
 			} else {
 				return errors.New("syntax error")

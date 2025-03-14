@@ -54,20 +54,20 @@ func MakeLLTable(grammar tokens.Grammar, cfg CFG, firstSet FirstSet, followset F
 }
 
 type LLParser struct {
-	Words   chan tokens.Lexeme
+	Words   chan tokens.Token
 	LLTable LLTable
 	Grammar tokens.Grammar
 }
 
 func NewParser(grammar tokens.Grammar, ll_table LLTable) LLParser {
 	return LLParser{
-		Words:   make(chan tokens.Lexeme),
+		Words:   make(chan tokens.Token),
 		LLTable: ll_table,
 		Grammar: grammar,
 	}
 }
 
-func (p *LLParser) NextWord() tokens.Lexeme {
+func (p *LLParser) NextWord() tokens.Token {
 	return <-p.Words
 }
 
@@ -79,20 +79,20 @@ func LLParse(p *LLParser) bool {
 
 	for {
 		focus := stack.Peek()
-		if focus == tokens.ItemEOF && word.ItemType == tokens.ItemEOF {
+		if focus == tokens.ItemEOF && word.Category == tokens.ItemEOF {
 			return true
 		} else if focus.IsTerminal() || focus == tokens.ItemEOF {
-			if focus == word.ItemType {
+			if focus == word.Category {
 				stack.Pop()
 				word = p.NextWord()
 			} else {
 				return false
 			}
 		} else { // focus is nonterminal
-			if p.LLTable[focus-1001][word.ItemType-1].A != tokens.ItemError {
-				fmt.Println(stack, focus, word.ItemType)
+			if p.LLTable[focus-1001][word.Category-1].A != tokens.ItemError {
+				fmt.Println(stack, focus, word.Category)
 				stack.Pop()
-				B := p.LLTable[focus-1001][word.ItemType-1].B
+				B := p.LLTable[focus-1001][word.Category-1].B
 				for i := len(B) - 1; i >= 0; i-- {
 					if B[i] != tokens.ItemEpsilon {
 						stack.Push(B[i])
