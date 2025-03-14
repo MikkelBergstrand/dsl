@@ -76,28 +76,6 @@ func main() {
 		for i := range word_stream {
 			words <- word_stream[i]
 		}
-		return
-		words <- tokens.Lexeme{ItemType: tokens.ItemKeyInt, Value: "int"}
-		words <- tokens.Lexeme{ItemType: tokens.ItemIdentifier, Value: "a"}
-		words <- tokens.Lexeme{ItemType: tokens.ItemEquals, Value: "="}
-		words <- tokens.Lexeme{ItemType: tokens.ItemNumber, Value: "33"}
-		words <- tokens.Lexeme{ItemType: tokens.ItemSemicolon, Value: ";"}
-
-		words <- tokens.Lexeme{ItemType: tokens.ItemKeyInt, Value: "int"}
-		words <- tokens.Lexeme{ItemType: tokens.ItemIdentifier, Value: "b"}
-		words <- tokens.Lexeme{ItemType: tokens.ItemEquals, Value: "="}
-		words <- tokens.Lexeme{ItemType: tokens.ItemNumber, Value: "22"}
-		words <- tokens.Lexeme{ItemType: tokens.ItemSemicolon, Value: ";"}
-
-		words <- tokens.Lexeme{ItemType: tokens.ItemIdentifier, Value: "a"}
-		words <- tokens.Lexeme{ItemType: tokens.ItemOpMult, Value: "*"}
-		words <- tokens.Lexeme{ItemType: tokens.ItemIdentifier, Value: "b"}
-		words <- tokens.Lexeme{ItemType: tokens.ItemOpPlus, Value: "+"}
-		words <- tokens.Lexeme{ItemType: tokens.ItemNumber, Value: "40"}
-		words <- tokens.Lexeme{ItemType: tokens.ItemOpMult, Value: "*"}
-		words <- tokens.Lexeme{ItemType: tokens.ItemNumber, Value: "83"}
-		words <- tokens.Lexeme{ItemType: tokens.ItemSemicolon, Value: ";"}
-		words <- tokens.Lexeme{ItemType: tokens.ItemEOF, Value: ""}
 	}()
 
 	emitter := make(chan instructionset.Instruction)
