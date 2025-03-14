@@ -87,7 +87,6 @@ func CreateCFG() CFG {
 	cfg := NewCFG()
 
 	cfg.addRule(tokens.NTGoal, cfg_alternative{tokens.NTStatement})
-	//cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.NTExpr, tokens.ItemSemicolon, tokens.NTStatement})
 	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.NTExpr, tokens.ItemSemicolon})
 
 	cfg.addRule(tokens.NTExpr, cfg_alternative{tokens.NTExpr, tokens.ItemOpPlus, tokens.NTTerm})
@@ -103,6 +102,13 @@ func CreateCFG() CFG {
 		{tokens.ItemNumber},
 		{tokens.ItemIdentifier},
 	})
+
+	cfg.addRules(tokens.NTStatement, []cfg_alternative{
+		{tokens.ItemKeyInt, tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTExpr},
+		//{tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTExpr},
+	})
+
+	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.NTStatement, tokens.ItemSemicolon, tokens.NTStatement})
 
 	cfg.compile()
 

@@ -3,10 +3,10 @@ package parser
 import (
 	"dsl/instructionset"
 	"dsl/storage"
-	"fmt"
 	"strconv"
 )
 
+// Convert string to integer. Should not fail!
 func intval(s string) int {
 	intval, err := strconv.Atoi(s)
 	if err != nil {
@@ -42,8 +42,17 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, emitter chan<
 		return words[0].(int)
 	case 9:
 		return storage.NewIntLiteral(intval(words[0].(string)))
+	case 10:
+		return storage.GetIntVarAddr(words[0].(string))
+	case 11:
+		addr := storage.NewIntVariable(words[1].(string))
+		emitter <- &instructionset.InstrAssign{
+			Source: words[3].(int),
+			Dest:   addr,
+		}
+		return addr
 	}
 
-	fmt.Println("Unhandled rule: ", rule_id)
+	//fmt.Println("Unhandled rule: ", rule_id)
 	return nil
 }

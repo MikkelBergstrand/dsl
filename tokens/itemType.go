@@ -27,6 +27,8 @@ const (
 	ItemParClosed
 	ItemSemicolon
 	ItemText
+	ItemKeyInt
+	ItemEquals
 )
 
 const (

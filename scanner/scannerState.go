@@ -39,7 +39,7 @@ func (l *lexer) run() {
 }
 
 func (l *lexer) emit(t tokens.ItemType) {
-	l.items <- tokens.Lexeme{t, l.input[l.start:l.pos]}
+	l.items <- tokens.Lexeme{ItemType: t, Value: l.input[l.start:l.pos]}
 	l.start = l.pos
 }
 
@@ -86,7 +86,6 @@ func (l *lexer) acceptRegex(valid string) {
 	re := regexp.MustCompile(`^[` + valid + `]+`)
 
 	ret := re.FindStringIndex(l.input[l.pos:])
-	fmt.Println(ret)
 	if ret != nil {
 		l.pos += ret[1]
 	}
@@ -94,8 +93,8 @@ func (l *lexer) acceptRegex(valid string) {
 
 func (l *lexer) errorf(format string, args ...interface{}) stateFn {
 	l.items <- tokens.Lexeme{
-		tokens.ItemError,
-		fmt.Sprintf(format, args...),
+		ItemType: tokens.ItemError,
+		Value:    fmt.Sprintf(format, args...),
 	}
 	return nil
 }
@@ -118,6 +117,9 @@ func lexInsideExpression(l *lexer) stateFn {
 
 		if isSpace(r) {
 			l.ignore()
+		} else if r == '=' {
+			l.emit(tokens.ItemEquals)
+			return lexInsideExpression
 		} else if r == '"' {
 			return lexQuote
 		} else if r == '+' {
@@ -183,9 +185,15 @@ func lexNumber(l *lexer) stateFn {
 
 func lexIdentifier(l *lexer) stateFn {
 	//We know the first is alphanumeric
-	fmt.Println("yo")
 	l.acceptRegex("0-9a-zA-Z_")
-	l.emit(tokens.ItemIdentifier)
+
+	current := l.input[l.start:l.pos]
+	if current == "int" {
+		l.emit(tokens.ItemKeyInt)
+	} else {
+		l.emit(tokens.ItemIdentifier)
+	}
+
 	return lexInsideExpression
 }
 

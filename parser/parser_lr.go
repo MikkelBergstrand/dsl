@@ -281,15 +281,13 @@ func LRParser(actionTable ActionTable, gotoTable GotoTable, words <-chan tokens.
 		switch action.Type {
 		case ACTION_REDUCE:
 			rule := cfg.RuleByIndex(action.Value)
-			var popped []any
-			var print []stack_state
-			for range len(rule.B) {
+
+			popped := make([]any, len(rule.B))
+			for i := len(rule.B) - 1; i >= 0; i-- {
 				pop := stack.Pop()
-				popped = append(popped, pop.value)
-				print = append(print, pop)
+				popped[i] = pop.value
 			}
 
-			fmt.Println(action.Value, print)
 			value := DoActions(action.Value, popped, storage, emitter)
 
 			state = stack.Peek()

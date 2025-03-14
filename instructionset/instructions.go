@@ -22,6 +22,11 @@ type InstrArithmetic struct {
 	Result   int
 }
 
+type InstrAssign struct {
+	Dest   int
+	Source int
+}
+
 func (instr *InstrArithmetic) Execute(storage *storage.Storage) {
 	switch instr.Operator {
 	case ADD:
@@ -33,4 +38,8 @@ func (instr *InstrArithmetic) Execute(storage *storage.Storage) {
 	case SUB:
 		storage.SetInt(instr.Result, storage.GetInt(instr.A)-storage.GetInt(instr.B))
 	}
+}
+
+func (instr *InstrAssign) Execute(storage *storage.Storage) {
+	storage.SetInt(instr.Dest, storage.GetInt(instr.Source))
 }

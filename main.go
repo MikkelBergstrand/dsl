@@ -18,12 +18,12 @@ func main() {
 		return
 	}
 
-	_, ch := scanner.Lex("test_lexer", string(file_contents))
+	_, scanner_stream := scanner.Lex("test_lexer", string(file_contents))
 
 	_exit := false
 	word_stream := make([]tokens.Lexeme, 0)
 	for !_exit {
-		c := <-ch
+		c := <-scanner_stream
 		switch c.ItemType {
 		case tokens.ItemEOF:
 			word_stream = append(word_stream, c)
@@ -49,6 +49,8 @@ func main() {
 			tokens.ItemParOpen,
 			tokens.ItemParClosed,
 			tokens.ItemSemicolon,
+			tokens.ItemKeyInt,
+			tokens.ItemEquals,
 		},
 		NonTerminals: []tokens.ItemType{
 			tokens.NTGoal,
@@ -71,9 +73,25 @@ func main() {
 
 	words := make(chan tokens.Lexeme)
 	go func() {
-		words <- tokens.Lexeme{ItemType: tokens.ItemNumber, Value: "12"}
+		for i := range word_stream {
+			words <- word_stream[i]
+		}
+		return
+		words <- tokens.Lexeme{ItemType: tokens.ItemKeyInt, Value: "int"}
+		words <- tokens.Lexeme{ItemType: tokens.ItemIdentifier, Value: "a"}
+		words <- tokens.Lexeme{ItemType: tokens.ItemEquals, Value: "="}
+		words <- tokens.Lexeme{ItemType: tokens.ItemNumber, Value: "33"}
+		words <- tokens.Lexeme{ItemType: tokens.ItemSemicolon, Value: ";"}
+
+		words <- tokens.Lexeme{ItemType: tokens.ItemKeyInt, Value: "int"}
+		words <- tokens.Lexeme{ItemType: tokens.ItemIdentifier, Value: "b"}
+		words <- tokens.Lexeme{ItemType: tokens.ItemEquals, Value: "="}
+		words <- tokens.Lexeme{ItemType: tokens.ItemNumber, Value: "22"}
+		words <- tokens.Lexeme{ItemType: tokens.ItemSemicolon, Value: ";"}
+
+		words <- tokens.Lexeme{ItemType: tokens.ItemIdentifier, Value: "a"}
 		words <- tokens.Lexeme{ItemType: tokens.ItemOpMult, Value: "*"}
-		words <- tokens.Lexeme{ItemType: tokens.ItemNumber, Value: "19"}
+		words <- tokens.Lexeme{ItemType: tokens.ItemIdentifier, Value: "b"}
 		words <- tokens.Lexeme{ItemType: tokens.ItemOpPlus, Value: "+"}
 		words <- tokens.Lexeme{ItemType: tokens.ItemNumber, Value: "40"}
 		words <- tokens.Lexeme{ItemType: tokens.ItemOpMult, Value: "*"}
@@ -83,7 +101,7 @@ func main() {
 	}()
 
 	emitter := make(chan instructionset.Instruction)
-	storage := storage.Storage{}
+	storage := storage.NewStorage()
 
 	go func() {
 		for {
