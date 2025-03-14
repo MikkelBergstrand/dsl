@@ -137,8 +137,6 @@ func computeClosures(grammar tokens.Grammar, cfg CFG, first FirstSet) []closure 
 				}
 			}
 
-			list := follows_dot.SortedList()
-			fmt.Println(list)
 			for _, x := range follows_dot.SortedList() {
 				temp := makeGoto(cc_list[cc_index], cfg, first, x)
 				alreadyExists := false
@@ -156,10 +154,6 @@ func computeClosures(grammar tokens.Grammar, cfg CFG, first FirstSet) []closure 
 		}
 	}
 
-	for cc := range cc_list {
-		fmt.Printf("cc%d\n", cc)
-		fmt.Println(cc_list[cc].String(cfg))
-	}
 	return cc_list
 }
 
@@ -260,12 +254,6 @@ func CreateLRTable(grammar tokens.Grammar, cfg CFG, first FirstSet) (ActionTable
 			}
 		}
 	}
-
-	fmt.Println(grammar.NonTerminals)
-	fmt.Println(grammar.Terminals)
-	fmt.Println(actionTable)
-	fmt.Println(gotoTable)
-
 	return actionTable, gotoTable
 }
 
@@ -282,15 +270,13 @@ func LRParser(actionTable ActionTable, gotoTable GotoTable, words <-chan tokens.
 	alive := true
 
 	for alive {
-		fmt.Println(stack)
 		state := stack.Peek()
 
 		action := actionTable[state.state][grammar.MapToArrayindex(word.ItemType)]
-		
+
 		switch action.Type {
 		case ACTION_REDUCE:
 			rule := cfg.RuleByIndex(action.Value)
-			fmt.Println(stack, state, rule)
 			for range len(rule.B) {
 				stack.Pop()
 			}

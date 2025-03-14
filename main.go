@@ -57,19 +57,20 @@ func main() {
 		StartSymbol: tokens.NTGoal,
 	}
 
-	grammar = tokens.Grammar{
-		Terminals: []tokens.ItemType{
-			tokens.TItemParOpen,
-			tokens.TItemParClosed,
-		},
-		NonTerminals: []tokens.ItemType{
-			tokens.NTTGoal,
-			tokens.NTTList,
-			tokens.NTTPair,
-		},
-		StartSymbol: tokens.NTTGoal,
-	}
-	cfg := parser.CreateTestCFG()
+	/*
+		grammar = tokens.Grammar{
+			Terminals: []tokens.ItemType{
+				tokens.TItemParOpen,
+				tokens.TItemParClosed,
+			},
+			NonTerminals: []tokens.ItemType{
+				tokens.NTTGoal,
+				tokens.NTTList,
+				tokens.NTTPair,
+			},
+			StartSymbol: tokens.NTTGoal,
+		}*/
+	cfg := parser.CreateCFG()
 	fmt.Println(cfg)
 	//cfg = parser.EliminateLeftRecursion(cfg, &grammar)
 
@@ -92,10 +93,9 @@ func main() {
 	*/
 	words := make(chan tokens.Lexeme)
 	go func() {
-		words <- tokens.Lexeme{ItemType: tokens.TItemParOpen, Value: "("}
-		words <- tokens.Lexeme{ItemType: tokens.TItemParOpen, Value: "("}
-		words <- tokens.Lexeme{ItemType: tokens.TItemParClosed, Value: "("}
-		words <- tokens.Lexeme{ItemType: tokens.ItemEOF,  Value: ""}
+		words <- tokens.Lexeme{ItemType: tokens.ItemNumber, Value: "3"}
+		words <- tokens.Lexeme{ItemType: tokens.ItemSemicolon, Value: ";"}
+		words <- tokens.Lexeme{ItemType: tokens.ItemEOF, Value: ""}
 	}()
 
 	parser.LRParser(action, _goto, words, cfg, grammar)
