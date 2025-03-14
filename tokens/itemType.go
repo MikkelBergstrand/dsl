@@ -32,6 +32,7 @@ const (
 const (
 	//NON-Terminals
 	NTGoal ItemType = iota + 1001
+	NTStatement
 	NTExpr
 	NTTerm
 	NTFactor
@@ -57,7 +58,8 @@ func (grammar *Grammar) MapToArrayindex(item ItemType) int {
 	if item.IsTerminal() {
 		return int(item) - 1
 	} else if item.IsNonTerminal() {
-		return int(item) - 1002	} else if item == ItemEOF {
+		return int(item) - 1002
+	} else if item == ItemEOF {
 		return len(grammar.Terminals)
 	}
 

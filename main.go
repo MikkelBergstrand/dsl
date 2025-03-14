@@ -1,8 +1,10 @@
 package main
 
 import (
+	"dsl/instructionset"
 	"dsl/parser"
 	"dsl/scanner"
+	"dsl/storage"
 	"dsl/tokens"
 	"fmt"
 	"log"
@@ -50,6 +52,7 @@ func main() {
 		},
 		NonTerminals: []tokens.ItemType{
 			tokens.NTGoal,
+			tokens.NTStatement,
 			tokens.NTExpr,
 			tokens.NTTerm,
 			tokens.NTFactor,
@@ -57,46 +60,42 @@ func main() {
 		StartSymbol: tokens.NTGoal,
 	}
 
-	/*
-		grammar = tokens.Grammar{
-			Terminals: []tokens.ItemType{
-				tokens.TItemParOpen,
-				tokens.TItemParClosed,
-			},
-			NonTerminals: []tokens.ItemType{
-				tokens.NTTGoal,
-				tokens.NTTList,
-				tokens.NTTPair,
-			},
-			StartSymbol: tokens.NTTGoal,
-		}*/
 	cfg := parser.CreateCFG()
 	fmt.Println(cfg)
 	//cfg = parser.EliminateLeftRecursion(cfg, &grammar)
 
 	first := parser.First(cfg, grammar)
-
-	fmt.Println("FIRST")
-	fmt.Println(first)
-
-	follow := parser.Follow(cfg, grammar, first)
-
-	fmt.Println("FOLLOW")
-	fmt.Println(follow)
+	//follow := parser.Follow(cfg, grammar, first)
 
 	action, _goto := parser.CreateLRTable(grammar, cfg, first)
-	//fmt.Println(closure.String(cfg))
 
-	/*ll_table := parser.MakeLLTable(grammar, cfg, first, follow)
-	//(ll_parser := parser.NewParser(grammar, ll_table)
-
-	*/
 	words := make(chan tokens.Lexeme)
 	go func() {
-		words <- tokens.Lexeme{ItemType: tokens.ItemNumber, Value: "3"}
+		words <- tokens.Lexeme{ItemType: tokens.ItemNumber, Value: "12"}
+		words <- tokens.Lexeme{ItemType: tokens.ItemOpMult, Value: "*"}
+		words <- tokens.Lexeme{ItemType: tokens.ItemNumber, Value: "19"}
+		words <- tokens.Lexeme{ItemType: tokens.ItemOpPlus, Value: "+"}
+		words <- tokens.Lexeme{ItemType: tokens.ItemNumber, Value: "40"}
+		words <- tokens.Lexeme{ItemType: tokens.ItemOpMult, Value: "*"}
+		words <- tokens.Lexeme{ItemType: tokens.ItemNumber, Value: "83"}
 		words <- tokens.Lexeme{ItemType: tokens.ItemSemicolon, Value: ";"}
 		words <- tokens.Lexeme{ItemType: tokens.ItemEOF, Value: ""}
 	}()
 
-	parser.LRParser(action, _goto, words, cfg, grammar)
+	emitter := make(chan instructionset.Instruction)
+	storage := storage.Storage{}
+
+	go func() {
+		for {
+			emitted := <-emitter
+			fmt.Println("Emitted: ", emitted)
+			emitted.Execute(&storage)
+		}
+	}()
+
+	err = parser.LRParser(action, _goto, words, cfg, grammar, emitter, &storage)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }

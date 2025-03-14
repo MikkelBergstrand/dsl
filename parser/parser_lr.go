@@ -1,8 +1,11 @@
 package parser
 
 import (
+	"dsl/instructionset"
+	"dsl/storage"
 	"dsl/structure"
 	"dsl/tokens"
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -257,46 +260,55 @@ func CreateLRTable(grammar tokens.Grammar, cfg CFG, first FirstSet) (ActionTable
 	return actionTable, gotoTable
 }
 
-func LRParser(actionTable ActionTable, gotoTable GotoTable, words <-chan tokens.Lexeme, cfg CFG, grammar tokens.Grammar) {
+func LRParser(actionTable ActionTable, gotoTable GotoTable, words <-chan tokens.Lexeme, cfg CFG, grammar tokens.Grammar,
+	emitter chan instructionset.Instruction, storage *storage.Storage) error {
 	type stack_state struct {
 		symbol tokens.ItemType
 		state  int
+		value  any
 	}
+
 	stack := structure.NewStack[stack_state]()
-	stack.Push(stack_state{tokens.ItemError, -1})
-	stack.Push(stack_state{grammar.StartSymbol, 0})
+	stack.Push(stack_state{tokens.ItemError, -1, nil})
+	stack.Push(stack_state{grammar.StartSymbol, 0, nil})
 
 	word := <-words
-	alive := true
 
-	for alive {
+	for {
 		state := stack.Peek()
-
 		action := actionTable[state.state][grammar.MapToArrayindex(word.ItemType)]
 
 		switch action.Type {
 		case ACTION_REDUCE:
 			rule := cfg.RuleByIndex(action.Value)
+			var popped []any
+			var print []stack_state
 			for range len(rule.B) {
-				stack.Pop()
+				pop := stack.Pop()
+				popped = append(popped, pop.value)
+				print = append(print, pop)
 			}
+
+			fmt.Println(action.Value, print)
+			value := DoActions(action.Value, popped, storage, emitter)
+
 			state = stack.Peek()
 			_goto := gotoTable[state.state][grammar.MapToArrayindex(rule.A)]
 			if _goto < 0 {
-				panic("Bad goto!")
+				return errors.New("bad goto")
 			}
-			stack.Push(stack_state{rule.A, _goto})
+			stack.Push(stack_state{rule.A, _goto, value})
 		case ACTION_SHIFT:
-			stack.Push(stack_state{word.ItemType, action.Value})
+			stack.Push(stack_state{word.ItemType, action.Value, word.Value})
 			word = <-words
 		case ACTION_ACCEPT:
 			if word.ItemType == tokens.ItemEOF {
-				alive = false // success
+				return nil // success
 			} else {
-				panic("Syntax error!")
+				return errors.New("syntax error")
 			}
 		default:
-			panic("Syntax error!")
+			return errors.New("syntax error")
 		}
 	}
 }

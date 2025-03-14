@@ -34,6 +34,26 @@ func NewCFG() CFG {
 	}
 }
 
+func (cfg *CFG) addRule(A tokens.ItemType, B cfg_alternative) {
+	cfg._array = append(cfg._array, cfg_pattern{A: A, B: B})
+}
+
+func (cfg *CFG) addRules(A tokens.ItemType, Bs []cfg_alternative) {
+	for _, B := range Bs {
+		cfg.addRule(A, B)
+	}
+}
+
+func (cfg *CFG) compile() {
+	for idx, alt := range cfg._array {
+		_, ok := cfg._map[alt.A]
+		if !ok {
+			cfg._map[alt.A] = *structure.NewSet[int]()
+		}
+		cfg._map[alt.A].Add(idx)
+	}
+}
+
 func (cfg *CFG) updateRule(A tokens.ItemType, B cfg_rule) {
 	indices := cfg._map[A].List()
 
@@ -63,74 +83,30 @@ func (cfg CFG) RuleByIndex(index int) cfg_pattern {
 	return cfg._array[index]
 }
 
-func CFGFromMap(cfg_map map[tokens.ItemType]cfg_rule) CFG {
+func CreateCFG() CFG {
 	cfg := NewCFG()
 
-	for A, rule := range cfg_map {
-		for _, B := range rule {
-			cfg._array = append(cfg._array, cfg_pattern{
-				A: A,
-				B: B,
-			})
-			_, ok := cfg._map[A]
-			if !ok {
-				cfg._map[A] = *structure.NewSet[int]()
-			}
-			cfg._map[A].Add(len(cfg._array) - 1)
-		}
-	}
+	cfg.addRule(tokens.NTGoal, cfg_alternative{tokens.NTStatement})
+	//cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.NTExpr, tokens.ItemSemicolon, tokens.NTStatement})
+	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.NTExpr, tokens.ItemSemicolon})
+
+	cfg.addRule(tokens.NTExpr, cfg_alternative{tokens.NTExpr, tokens.ItemOpPlus, tokens.NTTerm})
+	cfg.addRule(tokens.NTExpr, cfg_alternative{tokens.NTExpr, tokens.ItemOpMinus, tokens.NTTerm})
+	cfg.addRule(tokens.NTExpr, cfg_alternative{tokens.NTTerm})
+
+	cfg.addRule(tokens.NTTerm, cfg_alternative{tokens.NTTerm, tokens.ItemOpMult, tokens.NTFactor})
+	cfg.addRule(tokens.NTTerm, cfg_alternative{tokens.NTTerm, tokens.ItemOpDiv, tokens.NTFactor})
+	cfg.addRule(tokens.NTTerm, cfg_alternative{tokens.NTFactor})
+
+	cfg.addRules(tokens.NTFactor, []cfg_alternative{
+		{tokens.ItemParOpen, tokens.NTExpr, tokens.ItemParClosed},
+		{tokens.ItemNumber},
+		{tokens.ItemIdentifier},
+	})
+
+	cfg.compile()
+
 	return cfg
-}
-
-func CreateCFG() CFG {
-	cfg := make(map[tokens.ItemType]cfg_rule)
-	cfg[tokens.NTGoal] = cfg_rule{
-		cfg_alternative{tokens.NTExpr, tokens.ItemSemicolon},
-	}
-	cfg[tokens.NTExpr] = cfg_rule{
-		cfg_alternative{tokens.NTExpr, tokens.ItemOpPlus, tokens.NTTerm},
-		cfg_alternative{tokens.NTExpr, tokens.ItemOpMinus, tokens.NTTerm},
-		cfg_alternative{tokens.NTTerm},
-	}
-	cfg[tokens.NTTerm] = cfg_rule{
-		cfg_alternative{tokens.NTTerm, tokens.ItemOpMult, tokens.NTFactor},
-		cfg_alternative{tokens.NTTerm, tokens.ItemOpDiv, tokens.NTFactor},
-		cfg_alternative{tokens.NTFactor},
-	}
-
-	cfg[tokens.NTFactor] = cfg_rule{
-		cfg_alternative{tokens.ItemParOpen, tokens.NTExpr, tokens.ItemParClosed},
-		cfg_alternative{tokens.ItemNumber},
-		cfg_alternative{tokens.ItemIdentifier},
-	}
-
-	return CFGFromMap(cfg)
-}
-
-func CreateTestCFG() CFG {
-	cfg := make(map[tokens.ItemType]cfg_rule)
-	cfg[tokens.NTTGoal] = cfg_rule{
-		cfg_alternative{tokens.NTTList},
-	}
-
-	cfg[tokens.NTTList] = cfg_rule{
-		cfg_alternative{tokens.NTTList, tokens.NTTPair},
-		cfg_alternative{tokens.NTTPair},
-	}
-
-	cfg[tokens.NTTPair] = cfg_rule{
-		cfg_alternative{tokens.TItemParOpen, tokens.NTTList, tokens.TItemParClosed},
-		cfg_alternative{tokens.TItemParOpen, tokens.TItemParClosed},
-	}
-	ret := CFGFromMap(cfg)
-	for k, v := range ret._map {
-		fmt.Println(k, v)
-	}
-
-	for i := range ret._array {
-		fmt.Println(ret._array[i].A, ret._array[i].B)
-	}
-	return ret
 }
 
 func EliminateLeftRecursion(cfg CFG, grammar *tokens.Grammar) CFG {
