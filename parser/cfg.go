@@ -86,8 +86,9 @@ func (cfg CFG) RuleByIndex(index int) cfg_pattern {
 func CreateCFG() CFG {
 	cfg := NewCFG()
 
-	cfg.addRule(tokens.NTGoal, cfg_alternative{tokens.NTStatement})
-	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.NTExpr, tokens.ItemSemicolon})
+	cfg.addRule(tokens.NTGoal, cfg_alternative{tokens.NTStatementList})
+	cfg.addRule(tokens.NTStatementList, cfg_alternative{tokens.NTStatement})
+	cfg.addRule(tokens.NTStatementList, cfg_alternative{tokens.NTStatement, tokens.NTStatementList})
 
 	cfg.addRule(tokens.NTExpr, cfg_alternative{tokens.NTExpr, tokens.ItemOpPlus, tokens.NTTerm})
 	cfg.addRule(tokens.NTExpr, cfg_alternative{tokens.NTExpr, tokens.ItemOpMinus, tokens.NTTerm})
@@ -104,11 +105,22 @@ func CreateCFG() CFG {
 	})
 
 	cfg.addRules(tokens.NTStatement, []cfg_alternative{
-		{tokens.ItemKeyInt, tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTExpr},
-		//{tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTExpr},
+		{tokens.ItemKeyInt, tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTExpr, tokens.ItemSemicolon},
+		{tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTExpr, tokens.ItemSemicolon},
+		{tokens.NTExpr, tokens.ItemSemicolon},
 	})
 
-	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.NTStatement, tokens.ItemSemicolon, tokens.NTStatement})
+	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.NTScopeBegin, tokens.NTStatement, tokens.NTScopeClose})
+
+	cfg.addRule(tokens.NTScopeBegin, cfg_alternative{tokens.ItemScopeOpen})
+	cfg.addRule(tokens.NTScopeClose, cfg_alternative{tokens.ItemScopeClose})
+
+	cfg.addRule(tokens.NTFactor, cfg_alternative{tokens.NTFunction})
+	cfg.addRule(tokens.NTFunction, cfg_alternative{tokens.ItemIdentifier, tokens.ItemParOpen, tokens.NTArgList, tokens.ItemParClosed})
+	cfg.addRule(tokens.NTArgList, cfg_alternative{tokens.NTArgument, tokens.ItemComma, tokens.NTArgList})
+	cfg.addRule(tokens.NTArgList, cfg_alternative{tokens.NTArgument})
+
+	cfg.addRule(tokens.NTArgument, cfg_alternative{tokens.NTExpr})
 
 	cfg.compile()
 

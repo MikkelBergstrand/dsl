@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"dsl/instructionset"
+	"dsl/runtime"
 	"dsl/storage"
 	"dsl/structure"
 	"dsl/tokens"
@@ -269,7 +269,7 @@ func CreateLRParser(grammar tokens.Grammar, cfg CFG, first FirstSet) LRParser {
 }
 
 func (parser *LRParser) Parse(words <-chan tokens.Token, cfg CFG, grammar tokens.Grammar,
-	emitter chan instructionset.Instruction, storage *storage.Storage) error {
+	storage *storage.Storage, runtime *runtime.Runtime) error {
 	type stack_state struct {
 		symbol tokens.ItemType
 		state  int
@@ -299,7 +299,7 @@ func (parser *LRParser) Parse(words <-chan tokens.Token, cfg CFG, grammar tokens
 				popped[i] = pop.value
 			}
 
-			value := DoActions(action.Value, popped, storage, emitter)
+			value := DoActions(action.Value, popped, storage, runtime)
 
 			state = stack.Peek()
 			_goto := gotoTable[state.state][grammar.MapToArrayindex(rule.A)]
@@ -317,7 +317,7 @@ func (parser *LRParser) Parse(words <-chan tokens.Token, cfg CFG, grammar tokens
 				return errors.New("syntax error")
 			}
 		default:
-			return errors.New("syntax error")
+			return errors.New(fmt.Sprintln("invalid action state on", word))
 		}
 	}
 }

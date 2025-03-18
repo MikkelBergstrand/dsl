@@ -1,6 +1,9 @@
-package instructionset
+package instructions
 
-import "dsl/storage"
+import (
+	"dsl/storage"
+	"fmt"
+)
 
 type Instruction interface {
 	Execute(*storage.Storage)
@@ -42,4 +45,12 @@ func (instr *InstrArithmetic) Execute(storage *storage.Storage) {
 
 func (instr *InstrAssign) Execute(storage *storage.Storage) {
 	storage.SetInt(instr.Dest, storage.GetInt(instr.Source))
+}
+
+type InstructionEcho struct {
+	A int
+}
+
+func (instr *InstructionEcho) Execute(storage *storage.Storage) {
+	fmt.Println(instr.A)
 }

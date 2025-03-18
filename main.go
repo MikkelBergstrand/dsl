@@ -1,14 +1,15 @@
 package main
 
 import (
-	"dsl/instructionset"
 	"dsl/parser"
+	"dsl/runtime"
 	"dsl/scanner"
 	"dsl/storage"
 	"dsl/tokens"
 	"fmt"
 	"log"
 	"os"
+	"time"
 )
 
 func main() {
@@ -28,13 +29,11 @@ func main() {
 		case tokens.ItemEOF:
 			word_stream = append(word_stream, c)
 			_exit = true
-			break
 		case tokens.ItemError:
 			log.Fatal(c)
 			return
 		default:
 			word_stream = append(word_stream, c)
-			fmt.Println(c)
 		}
 	}
 
@@ -51,25 +50,31 @@ func main() {
 			tokens.ItemSemicolon,
 			tokens.ItemKeyInt,
 			tokens.ItemEquals,
+			tokens.ItemScopeOpen,
+			tokens.ItemScopeClose,
+			tokens.ItemComma,
 		},
 		NonTerminals: []tokens.ItemType{
 			tokens.NTGoal,
 			tokens.NTStatement,
+			tokens.NTStatementList,
 			tokens.NTExpr,
 			tokens.NTTerm,
 			tokens.NTFactor,
+			tokens.NTScopeBegin,
+			tokens.NTScopeClose,
+			tokens.NTFunction,
+			tokens.NTArgList,
+			tokens.NTArgument,
 		},
 		StartSymbol: tokens.NTGoal,
 	}
 
 	cfg := parser.CreateCFG()
-	fmt.Println(cfg)
-	//cfg = parser.EliminateLeftRecursion(cfg, &grammar)
 
-	first := parser.First(cfg, grammar)
-	//follow := parser.Follow(cfg, grammar, first)
-
-	parser := parser.CreateLRParser(grammar, cfg, first)
+	start := time.Now()
+	parser := parser.CreateLRParser(grammar, cfg, parser.First(cfg, grammar))
+	fmt.Println("Created parse tables in ", time.Since(start))
 
 	words := make(chan tokens.Token)
 	go func() {
@@ -78,20 +83,20 @@ func main() {
 		}
 	}()
 
-	emitter := make(chan instructionset.Instruction)
+	fmt.Println(word_stream)
+
 	storage := storage.NewStorage()
+	runtime := runtime.Runtime{}
 
-	go func() {
-		for {
-			emitted := <-emitter
-			fmt.Println("Emitted: ", emitted)
-			emitted.Execute(&storage)
-		}
-	}()
+	start = time.Now()
+	err = parser.Parse(words, cfg, grammar, &storage, &runtime)
+	fmt.Println("Parsed in ", time.Since(start))
 
-	err = parser.Parse(words, cfg, grammar, emitter, &storage)
+	runtime.Run(&storage)
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	select {}
 }

@@ -29,15 +29,24 @@ const (
 	ItemText
 	ItemKeyInt
 	ItemEquals
+	ItemScopeOpen
+	ItemScopeClose
+	ItemComma
 )
 
 const (
 	//NON-Terminals
 	NTGoal ItemType = iota + 1001
 	NTStatement
+	NTStatementList
 	NTExpr
 	NTTerm
 	NTFactor
+	NTScopeBegin
+	NTScopeClose
+	NTFunction
+	NTArgument
+	NTArgList
 )
 
 const (

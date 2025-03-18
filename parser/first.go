@@ -75,6 +75,5 @@ func First(cfg CFG, grammar tokens.Grammar) FirstSet {
 		}
 	}
 
-	fmt.Println(firstSet)
 	return firstSet
 }

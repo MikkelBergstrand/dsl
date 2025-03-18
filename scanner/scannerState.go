@@ -140,6 +140,15 @@ func lexInsideExpression(l *lexer) stateFn {
 		} else if r == ')' {
 			l.emit(tokens.ItemParClosed)
 			return lexInsideExpression
+		} else if r == '{' {
+			l.emit(tokens.ItemScopeOpen)
+			return lexInsideExpression
+		} else if r == '}' {
+			l.emit(tokens.ItemScopeClose)
+			return lexInsideExpression
+		} else if r == ',' {
+			l.emit(tokens.ItemComma)
+			return lexInsideExpression
 		} else if '0' <= r && r <= '9' {
 			l.backup()
 			return lexNumber
