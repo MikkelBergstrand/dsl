@@ -3,9 +3,12 @@ package functions
 import "dsl/variables"
 
 type Argument struct {
-	Type variables.Type
+	Identifier string
+	Type       variables.Type
 }
 
-type Function struct {
-	ArgumentList []Argument
+type FunctionDefinition struct {
+	ArgumentList   []Argument
+	AddressPointer int
+	ReturnType     variables.Type
 }

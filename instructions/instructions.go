@@ -1,7 +1,9 @@
 package instructions
 
 import (
+	"dsl/functions"
 	"dsl/storage"
+	"dsl/variables"
 	"fmt"
 )
 
@@ -19,15 +21,15 @@ const (
 )
 
 type InstrArithmetic struct {
-	A        int
-	B        int
+	A        variables.Symbol
+	B        variables.Symbol
 	Operator Operator
-	Result   int
+	Result   variables.Symbol
 }
 
 type InstrAssign struct {
-	Dest   int
-	Source int
+	Dest   variables.Symbol
+	Source variables.Symbol
 }
 
 func (instr *InstrArithmetic) Execute(storage *storage.Storage) {
@@ -48,9 +50,52 @@ func (instr *InstrAssign) Execute(storage *storage.Storage) {
 }
 
 type InstructionEcho struct {
-	A int
+	A variables.Symbol
 }
 
 func (instr *InstructionEcho) Execute(storage *storage.Storage) {
-	fmt.Println(instr.A)
+	fmt.Println(storage.AddressFromSymbol(instr.A))
+}
+
+type InstrCallFunction struct {
+	Func         *functions.FunctionDefinition
+	ArgumentList []int
+}
+
+func (instr *InstrCallFunction) Execute(storage *storage.Storage) {
+	storage.NewScope()
+	for i := range instr.ArgumentList {
+		storage.NewIntVariable(instr.Func.ArgumentList[i].Identifier)
+	}
+}
+
+type InstrExitFunction struct {
+	RetVal int
+}
+
+func (instr *InstrExitFunction) Execute(storage *storage.Storage) {
+	storage.DestroyScope()
+	storage.CurrentScope.RetVal = instr.RetVal
+}
+
+type InstrDeclareFunction struct {
+	AddressPointer int
+	Identifier     string
+	ArgumentList   []functions.Argument
+	ReturnType     variables.Type
+}
+
+func (instr *InstrDeclareFunction) Execute(storage *storage.Storage) {
+	fmt.Println("Declaring new function", instr)
+	storage.Functions[instr.Identifier] = functions.FunctionDefinition{
+		ArgumentList:   instr.ArgumentList,
+		AddressPointer: instr.AddressPointer,
+	}
+}
+
+type InstrEndDeclareFunction struct {
+}
+
+func (instr *InstrEndDeclareFunction) Execute(storage *storage.Storage) {
+	fmt.Println("End declaration of function.")
 }
