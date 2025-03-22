@@ -299,7 +299,7 @@ func (parser *LRParser) Parse(words <-chan tokens.Token, cfg CFG, grammar tokens
 				popped[i] = pop.value
 			}
 
-			value := DoActions(action.Value, popped, storage, runtime)
+			value, _ := DoActions(action.Value, popped, storage, runtime)
 
 			state = stack.Peek()
 			_goto := gotoTable[state.state][grammar.MapToArrayindex(rule.A)]

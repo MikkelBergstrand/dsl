@@ -12,3 +12,19 @@ type FunctionDefinition struct {
 	InstructionPointer int
 	ReturnType         variables.Type
 }
+
+// Verify an argument list of symbols.
+// If the argument list length and type of each argument does not match, return false.
+func (fn FunctionDefinition) ValidateArgumentList(symbols []variables.Symbol) bool {
+	if len(symbols) != len(fn.ArgumentList) {
+		return false
+	}
+
+	for i := range fn.ArgumentList {
+		if symbols[i].Type != fn.ArgumentList[i].Type {
+			return false
+		}
+	}
+
+	return true
+}

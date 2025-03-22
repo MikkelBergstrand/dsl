@@ -16,13 +16,13 @@ type Storage struct {
 type scoped_storage struct {
 	Parent            *scoped_storage
 	RetVal            int
-	VariableAddresses map[string]int
+	VariableAddresses map[string]variables.SymbolTableEntry
 	Offset            int
 }
 
 func newScopedStorage() scoped_storage {
 	return scoped_storage{
-		VariableAddresses: make(map[string]int),
+		VariableAddresses: make(map[string]variables.SymbolTableEntry),
 	}
 }
 
@@ -53,7 +53,7 @@ func (s *Storage) DestroyScope() {
 
 func (s *Storage) NewIntLiteral() variables.Symbol {
 	s.CurrentScope.Offset += 1
-	return variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1}
+	return variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1, Type: variables.INT}
 }
 
 func (s *Storage) NewIntVariable(name string) variables.Symbol {
@@ -63,20 +63,24 @@ func (s *Storage) NewIntVariable(name string) variables.Symbol {
 	}
 
 	addr := s.CurrentScope.Offset
-	s.CurrentScope.VariableAddresses[name] = addr
-	fmt.Printf("Created int %s (rel.adr.: %d, addr: %d)\n", name, s.CurrentScope.Offset-1, addr)
+	s.CurrentScope.VariableAddresses[name] = variables.SymbolTableEntry{
+		Type:   variables.INT,
+		Offset: addr,
+	}
+	fmt.Printf("Created int %s (addr: %d)\n", name, addr)
 
 	s.CurrentScope.Offset += 1
-	return variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1}
+
+	return variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1, Type: variables.INT}
 }
 
 func (s *Storage) GetVarAddr(name string) variables.Symbol {
 	scope := s.CurrentScope
 	fmt.Println(scope)
-	addr, ok := -1, false
+	symbol, ok := variables.SymbolTableEntry{}, false
 	scopeOffset := 0
 	for {
-		addr, ok = (*scope).VariableAddresses[name]
+		symbol, ok = (*scope).VariableAddresses[name]
 		if ok {
 			break
 		}
@@ -88,10 +92,11 @@ func (s *Storage) GetVarAddr(name string) variables.Symbol {
 	}
 
 	if !ok {
-		log.Fatalf("Could not resolve integer variable name: %s", name)
+		log.Fatalf("Could not resolve variable name: %s", name)
 	}
 	return variables.Symbol{
 		Scope:  scopeOffset,
-		Offset: addr,
+		Offset: symbol.Offset,
+		Type:   symbol.Type,
 	}
 }

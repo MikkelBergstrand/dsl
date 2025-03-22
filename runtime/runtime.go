@@ -25,6 +25,26 @@ func generateGlobalFunctions(runtime *Runtime, storage *storage.Storage) {
 	})
 	runtime.LoadInstruction(&InstrExitFunction{})
 	storage.DestroyScope()
+
+	storage.NewFunction("echo2", functions.FunctionDefinition{
+		InstructionPointer: runtime.NextInstruction(),
+		ArgumentList: []functions.Argument{
+			{Type: variables.INT, Identifier: "i"},
+			{Type: variables.INT, Identifier: "j"},
+		},
+		ReturnType: variables.NONE,
+	})
+	storage.NewIntVariable("i")
+	storage.NewIntVariable("j")
+	runtime.LoadInstruction(&InstructionEcho{
+		A: storage.GetVarAddr("i"),
+	})
+	runtime.LoadInstruction(&InstructionEcho{
+		A: storage.GetVarAddr("j"),
+	})
+	runtime.LoadInstruction(&InstrExitFunction{})
+	storage.DestroyScope()
+
 	runtime.Programcounter = runtime.NextInstruction()
 }
 
