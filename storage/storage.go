@@ -10,48 +10,40 @@ import (
 type Storage struct {
 	CurrentScope *scoped_storage
 	Scopes       []scoped_storage
-	Variables    []any
 	Functions    map[string]functions.FunctionDefinition
 }
 
 type scoped_storage struct {
-	AddressPointerBase   int
-	AddressPointerOffset int
-	Parent               *scoped_storage
-	RetVal               int
-	VariableAddresses    map[string]int
+	Parent            *scoped_storage
+	RetVal            int
+	VariableAddresses map[string]int
+	Offset            int
 }
 
-func newScopedStorage(addressPointer int) scoped_storage {
+func newScopedStorage() scoped_storage {
 	return scoped_storage{
-		VariableAddresses:    make(map[string]int),
-		AddressPointerBase:   addressPointer,
-		AddressPointerOffset: 0,
+		VariableAddresses: make(map[string]int),
 	}
 }
 
 func NewStorage() Storage {
 	storage := Storage{}
-	storage.Scopes = append(storage.Scopes, newScopedStorage(0))
+	storage.Scopes = append(storage.Scopes, newScopedStorage())
 	storage.CurrentScope = &storage.Scopes[0]
 	storage.Functions = make(map[string]functions.FunctionDefinition)
-	storage.Variables = make([]any, 1000)
 	return storage
+}
+
+func (s *Storage) NewFunction(name string, definition functions.FunctionDefinition) {
+	s.Functions[name] = definition
+	s.NewScope()
 }
 
 func (s *Storage) NewScope() {
 	fmt.Println("Creating scope")
-	s.Scopes = append(s.Scopes, newScopedStorage(s.CurrentScope.AddressPointerBase+s.CurrentScope.Parent.AddressPointerOffset))
+	s.Scopes = append(s.Scopes, newScopedStorage())
 	s.Scopes[len(s.Scopes)-1].Parent = s.CurrentScope
 	s.CurrentScope = &s.Scopes[len(s.Scopes)-1]
-}
-
-func (storage *Storage) AddressFromSymbol(symbol variables.Symbol) int {
-	scope := storage.CurrentScope
-	for i := 0; i < symbol.Scope; i++ {
-		scope = scope.Parent
-	}
-	return scope.AddressPointerBase + symbol.Offset
 }
 
 func (s *Storage) DestroyScope() {
@@ -59,10 +51,9 @@ func (s *Storage) DestroyScope() {
 	s.CurrentScope = s.CurrentScope.Parent
 }
 
-func (s *Storage) NewIntLiteral(val int) variables.Symbol {
-	s.Variables[s.CurrentScope.AddressPointerBase+s.CurrentScope.AddressPointerOffset] = val
-	s.CurrentScope.AddressPointerOffset += 1
-	return variables.Symbol{Scope: 0, Offset: s.CurrentScope.AddressPointerOffset}
+func (s *Storage) NewIntLiteral() variables.Symbol {
+	s.CurrentScope.Offset += 1
+	return variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1}
 }
 
 func (s *Storage) NewIntVariable(name string) variables.Symbol {
@@ -71,23 +62,17 @@ func (s *Storage) NewIntVariable(name string) variables.Symbol {
 		log.Fatalf("Redeclaration of variable: %s\n", name)
 	}
 
-	s.Variables[s.CurrentScope.AddressPointerBase+s.CurrentScope.AddressPointerOffset] = 0
-	s.CurrentScope.VariableAddresses[name] = s.CurrentScope.AddressPointerOffset
-	s.CurrentScope.AddressPointerOffset += 1
-	fmt.Printf("Created int %s (addr: %d)\n", name, len(s.Variables)-1)
-	return variables.Symbol{Scope: 0, Offset: s.CurrentScope.AddressPointerOffset - 1}
-}
+	addr := s.CurrentScope.Offset
+	s.CurrentScope.VariableAddresses[name] = addr
+	fmt.Printf("Created int %s (rel.adr.: %d, addr: %d)\n", name, s.CurrentScope.Offset-1, addr)
 
-func (s *Storage) GetInt(symbol variables.Symbol) int {
-	resolve, ok := s.Variables[s.AddressFromSymbol(symbol)].(int)
-	if !ok {
-		log.Fatalf("Not an integer")
-	}
-	return resolve
+	s.CurrentScope.Offset += 1
+	return variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1}
 }
 
 func (s *Storage) GetVarAddr(name string) variables.Symbol {
 	scope := s.CurrentScope
+	fmt.Println(scope)
 	addr, ok := -1, false
 	scopeOffset := 0
 	for {
@@ -96,6 +81,9 @@ func (s *Storage) GetVarAddr(name string) variables.Symbol {
 			break
 		}
 		scope = (*scope).Parent
+		if scope == nil {
+			break
+		}
 		scopeOffset += 1
 	}
 
@@ -106,9 +94,4 @@ func (s *Storage) GetVarAddr(name string) variables.Symbol {
 		Scope:  scopeOffset,
 		Offset: addr,
 	}
-}
-
-func (s *Storage) SetInt(symbol variables.Symbol, value int) {
-	s.Variables[s.AddressFromSymbol(symbol)] = value
-	fmt.Printf("Set %d to %d\n", symbol, value)
 }

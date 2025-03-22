@@ -86,7 +86,7 @@ func main() {
 	fmt.Println(word_stream)
 
 	storage := storage.NewStorage()
-	runtime := runtime.Runtime{}
+	runtime := runtime.New(&storage)
 
 	start = time.Now()
 	err = parser.Parse(words, cfg, grammar, &storage, &runtime)

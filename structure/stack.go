@@ -20,3 +20,7 @@ func (stack *Stack[K]) Peek() K {
 	val := (*stack)[len(*stack)-1]
 	return val
 }
+
+func (stack *Stack[K]) PeekRef() *K {
+	return &(*stack)[len(*stack)-1]
+}

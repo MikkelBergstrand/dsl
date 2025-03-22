@@ -8,7 +8,7 @@ type Argument struct {
 }
 
 type FunctionDefinition struct {
-	ArgumentList   []Argument
-	AddressPointer int
-	ReturnType     variables.Type
+	ArgumentList       []Argument
+	InstructionPointer int
+	ReturnType         variables.Type
 }
