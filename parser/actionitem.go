@@ -34,7 +34,7 @@ func intval(s string) int {
 	return intval
 }
 
-func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Runtime) (any, bool) {
+func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Runtime) any {
 	fmt.Println(rule_id, words)
 	switch rule_id {
 	case 3:
@@ -45,7 +45,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			Result:   new_addr,
 			Operator: runtime.ADD,
 		})
-		return new_addr, false
+		return new_addr
 	case 4:
 		new_addr := storage.NewLiteral(variables.INT)
 		r.LoadInstruction(&runtime.InstrArithmetic{
@@ -54,9 +54,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			Result:   new_addr,
 			Operator: runtime.SUB,
 		})
-		return new_addr, false
-	case 5:
-		return words[0], false
+		return new_addr
 	case 6:
 		new_addr := storage.NewLiteral(variables.INT)
 		r.LoadInstruction(&runtime.InstrArithmetic{
@@ -65,7 +63,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			Result:   new_addr,
 			Operator: runtime.MULT,
 		})
-		return new_addr, false
+		return new_addr
 	case 7:
 		new_addr := storage.NewLiteral(variables.INT)
 		r.LoadInstruction(&runtime.InstrArithmetic{
@@ -74,34 +72,30 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			Result:   new_addr,
 			Operator: runtime.DIV,
 		})
-		return new_addr, false
-	case 8:
-		return words[0], false
-	case 9:
-		return words[0], false
+		return new_addr
 	case 10: //New integer literal
 		addr := storage.NewLiteral(variables.INT)
 		r.LoadInstruction(&runtime.InstrLoadImmediate{
 			Dest:  addr,
 			Value: intval(words[0].(string)),
 		})
-		return addr, false
+		return addr
 	case 11:
-		return storage.GetVarAddr(words[0].(string)), false
+		return storage.GetVarAddr(words[0].(string))
 	case 12: // New integer, eg. int a = 3
 		addr := storage.NewVariable(variables.INT, words[1].(string))
 		r.LoadInstruction(&runtime.InstrAssign{
 			Source: words[3].(variables.Symbol),
 			Dest:   addr,
 		})
-		return addr, false
+		return addr
 	case 13: // Reassignment of integer, e.g. a = 3
 		addr := storage.GetVarAddr(words[0].(string))
 		r.LoadInstruction(&runtime.InstrAssign{
 			Source: words[2].(variables.Symbol),
 			Dest:   addr,
 		})
-		return addr, false
+		return addr
 	case 16: // Declare scope
 		storage.NewScope()
 	case 17: // End scope
@@ -145,43 +139,33 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		return List[variables.Symbol]{
 			First:  words[0].(variables.Symbol),
 			Second: &second,
-		}, false
+		}
 	case 21:
 		return List[variables.Symbol]{
 			First:  words[0].(variables.Symbol),
-			Second: nil}, false
-	case 22:
-		return words[0], false
-	case 24:
-		return words[0], false
-	case 26:
-		return words[0], false
-	case 28:
-		return words[0], false
-	case 30: // Evaluate
-		return words[0], false
-	case 37:
+			Second: nil}
+	case 37: // false
 		addr := storage.NewLiteral(variables.BOOL)
 		r.LoadInstruction(&runtime.InstrLoadImmediate{
 			Dest:  addr,
 			Value: false,
 		})
-		return addr, false
-	case 38:
+		return addr
+	case 38: // true
 		addr := storage.NewLiteral(variables.BOOL)
 		r.LoadInstruction(&runtime.InstrLoadImmediate{
 			Dest:  addr,
 			Value: true,
 		})
-		return addr, false
+		return addr
 	case 39: // Declaration boolean
 		addr := storage.NewVariable(variables.BOOL, words[1].(string))
 		r.LoadInstruction(&runtime.InstrAssign{
 			Source: words[3].(variables.Symbol),
 			Dest:   addr,
 		})
-		return addr, false
+		return addr
 	}
 
-	return nil, false
+	return words[0]
 }
