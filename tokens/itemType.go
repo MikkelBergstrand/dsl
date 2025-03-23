@@ -28,10 +28,22 @@ const (
 	ItemSemicolon
 	ItemText
 	ItemKeyInt
+	ItemKeyBool
+	ItemFalse
+	ItemTrue
 	ItemEquals
 	ItemScopeOpen
 	ItemScopeClose
 	ItemComma
+	ItemBoolAnd
+	ItemBoolOr
+	ItemBoolNot
+	ItemBoolLess
+	ItemBoolLessOrEqual
+	ItemBoolEqual
+	ItemBoolGreaterOrEqual
+	ItemBoolGreater
+	ItemBoolNotEqual
 )
 
 const (
@@ -47,6 +59,11 @@ const (
 	NTFunction
 	NTArgument
 	NTArgList
+	NTNExpr
+	NTAndTerm
+	NTNotTerm
+	NTRelExpr
+	NTRels
 )
 
 const (

@@ -8,7 +8,10 @@ import (
 	"strings"
 )
 
+// An alternative is the right-hand side of a single production, e.g. the "B" in A -> B
 type cfg_alternative []tokens.ItemType
+
+// A set of right-hand side productions, typically grouped together by a common left-hand side symbol.
 type cfg_rule []cfg_alternative
 
 type cfg_pattern struct {
@@ -16,8 +19,7 @@ type cfg_pattern struct {
 	B cfg_alternative
 }
 
-type ParserVariable int
-
+// A CFG (context-free grammar) holds all valid productions (A -> B) in a grammar.
 type CFG struct {
 	_array []cfg_pattern
 	_map   map[tokens.ItemType]structure.Set[int]
@@ -34,16 +36,22 @@ func NewCFG() CFG {
 	}
 }
 
+// Add a rule A -> B
 func (cfg *CFG) addRule(A tokens.ItemType, B cfg_alternative) {
 	cfg._array = append(cfg._array, cfg_pattern{A: A, B: B})
 }
 
+// Add multiple rules of form A -> B1, A -> B2, ... where B1, B2, .. are elements of Bs
 func (cfg *CFG) addRules(A tokens.ItemType, Bs []cfg_alternative) {
 	for _, B := range Bs {
 		cfg.addRule(A, B)
 	}
 }
 
+// Compiles all the rules by creating a map with the left-hand side of the production
+// as the key, and a set as the value corresponding to all rules with this left-hand side
+// The map significantly speeds up parsing by quickly retrieving rules from a left-hand side symbol.
+// Must be called when done adding rules!
 func (cfg *CFG) compile() {
 	for idx, alt := range cfg._array {
 		_, ok := cfg._map[alt.A]
@@ -90,9 +98,9 @@ func CreateCFG() CFG {
 	cfg.addRule(tokens.NTStatementList, cfg_alternative{tokens.NTStatement})
 	cfg.addRule(tokens.NTStatementList, cfg_alternative{tokens.NTStatement, tokens.NTStatementList})
 
-	cfg.addRule(tokens.NTExpr, cfg_alternative{tokens.NTExpr, tokens.ItemOpPlus, tokens.NTTerm})
-	cfg.addRule(tokens.NTExpr, cfg_alternative{tokens.NTExpr, tokens.ItemOpMinus, tokens.NTTerm})
-	cfg.addRule(tokens.NTExpr, cfg_alternative{tokens.NTTerm})
+	cfg.addRule(tokens.NTNExpr, cfg_alternative{tokens.NTNExpr, tokens.ItemOpPlus, tokens.NTTerm})
+	cfg.addRule(tokens.NTNExpr, cfg_alternative{tokens.NTNExpr, tokens.ItemOpMinus, tokens.NTTerm})
+	cfg.addRule(tokens.NTNExpr, cfg_alternative{tokens.NTTerm})
 
 	cfg.addRule(tokens.NTTerm, cfg_alternative{tokens.NTTerm, tokens.ItemOpMult, tokens.NTFactor})
 	cfg.addRule(tokens.NTTerm, cfg_alternative{tokens.NTTerm, tokens.ItemOpDiv, tokens.NTFactor})
@@ -105,7 +113,7 @@ func CreateCFG() CFG {
 	})
 
 	cfg.addRules(tokens.NTStatement, []cfg_alternative{
-		{tokens.ItemKeyInt, tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTExpr, tokens.ItemSemicolon},
+		{tokens.ItemKeyInt, tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTNExpr, tokens.ItemSemicolon},
 		{tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTExpr, tokens.ItemSemicolon},
 		{tokens.NTExpr, tokens.ItemSemicolon},
 	})
@@ -121,6 +129,41 @@ func CreateCFG() CFG {
 	cfg.addRule(tokens.NTArgList, cfg_alternative{tokens.NTArgument})
 
 	cfg.addRule(tokens.NTArgument, cfg_alternative{tokens.NTExpr})
+
+	cfg.addRules(tokens.NTExpr, []cfg_alternative{
+		{tokens.NTExpr, tokens.ItemBoolOr, tokens.NTAndTerm},
+		{tokens.NTAndTerm},
+	})
+	cfg.addRules(tokens.NTAndTerm, []cfg_alternative{
+		{tokens.NTAndTerm, tokens.ItemBoolAnd, tokens.NTNotTerm},
+		{tokens.NTNotTerm},
+	})
+	cfg.addRules(tokens.NTNotTerm, []cfg_alternative{
+		{tokens.ItemBoolNot, tokens.NTRelExpr},
+		{tokens.NTRelExpr},
+	})
+	cfg.addRules(tokens.NTRelExpr, []cfg_alternative{
+		{tokens.NTNExpr, tokens.NTRels, tokens.NTNExpr},
+		{tokens.NTNExpr},
+	})
+
+	cfg.addRules(tokens.NTRels, []cfg_alternative{
+		{tokens.ItemBoolEqual},
+		{tokens.ItemBoolNotEqual},
+		{tokens.ItemBoolLess},
+		{tokens.ItemBoolLessOrEqual},
+		{tokens.ItemBoolGreater},
+		{tokens.ItemBoolGreaterOrEqual},
+	})
+
+	cfg.addRules(tokens.NTFactor, []cfg_alternative{
+		{tokens.ItemFalse},
+		{tokens.ItemTrue},
+	})
+
+	cfg.addRule(tokens.NTStatement,
+		cfg_alternative{tokens.ItemKeyBool, tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTExpr, tokens.ItemSemicolon},
+	)
 
 	cfg.compile()
 

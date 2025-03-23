@@ -1,4 +1,5 @@
 int a = 3;
-echo(a);
+bool b = false;
+echo(b);
 echo(12+a);
 echo2(25, 10);

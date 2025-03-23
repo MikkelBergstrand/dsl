@@ -51,12 +51,12 @@ func (s *Storage) DestroyScope() {
 	s.CurrentScope = s.CurrentScope.Parent
 }
 
-func (s *Storage) NewIntLiteral() variables.Symbol {
+func (s *Storage) NewLiteral(vartype variables.Type) variables.Symbol {
 	s.CurrentScope.Offset += 1
-	return variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1, Type: variables.INT}
+	return variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1, Type: vartype}
 }
 
-func (s *Storage) NewIntVariable(name string) variables.Symbol {
+func (s *Storage) NewVariable(vartype variables.Type, name string) variables.Symbol {
 	_, exists := s.CurrentScope.VariableAddresses[name]
 	if exists {
 		log.Fatalf("Redeclaration of variable: %s\n", name)
@@ -64,14 +64,14 @@ func (s *Storage) NewIntVariable(name string) variables.Symbol {
 
 	addr := s.CurrentScope.Offset
 	s.CurrentScope.VariableAddresses[name] = variables.SymbolTableEntry{
-		Type:   variables.INT,
+		Type:   vartype,
 		Offset: addr,
 	}
-	fmt.Printf("Created int %s (addr: %d)\n", name, addr)
+	fmt.Printf("Created variable %s of type %s (addr: %d)\n", vartype.String(), name, addr)
 
 	s.CurrentScope.Offset += 1
 
-	return variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1, Type: variables.INT}
+	return variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1, Type: vartype}
 }
 
 func (s *Storage) GetVarAddr(name string) variables.Symbol {

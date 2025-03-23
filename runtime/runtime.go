@@ -6,7 +6,6 @@ import (
 	"dsl/structure"
 	"dsl/variables"
 	"fmt"
-	"log"
 	"reflect"
 )
 
@@ -19,7 +18,7 @@ func generateGlobalFunctions(runtime *Runtime, storage *storage.Storage) {
 		ReturnType: variables.NONE,
 	})
 
-	storage.NewIntVariable("i")
+	storage.NewVariable(variables.INT, "i")
 	runtime.LoadInstruction(&InstructionEcho{
 		A: storage.GetVarAddr("i"),
 	})
@@ -34,8 +33,8 @@ func generateGlobalFunctions(runtime *Runtime, storage *storage.Storage) {
 		},
 		ReturnType: variables.NONE,
 	})
-	storage.NewIntVariable("i")
-	storage.NewIntVariable("j")
+	storage.NewVariable(variables.INT, "i")
+	storage.NewVariable(variables.INT, "j")
 	runtime.LoadInstruction(&InstructionEcho{
 		A: storage.GetVarAddr("i"),
 	})
@@ -112,16 +111,17 @@ func (r *Runtime) AddressFromSymbol(symbol variables.Symbol) int {
 	return ar.AddressStart + symbol.Offset
 }
 
-func (s *Runtime) GetInt(symbol variables.Symbol) int {
-	resolve, ok := s.Variables[s.AddressFromSymbol(symbol)].(int)
-	if !ok {
-		log.Fatalf("Not an integer")
-	}
+func (s *Runtime) Get(symbol variables.Symbol) any {
+	resolve := s.Variables[s.AddressFromSymbol(symbol)]
 	fmt.Printf("GetInt() = %d from addr %d, symbol %d\n", resolve, s.AddressFromSymbol(symbol), symbol)
 	return resolve
 }
 
-func (s *Runtime) SetInt(symbol variables.Symbol, value int) {
+func (r *Runtime) GetInt(symbol variables.Symbol) int {
+	return r.Get(symbol).(int)
+}
+
+func (s *Runtime) Set(symbol variables.Symbol, value any) {
 	addr := s.AddressFromSymbol(symbol)
 	s.Variables[addr] = value
 	fmt.Printf("Set %d to %d at addr %d\n", symbol, value, addr)

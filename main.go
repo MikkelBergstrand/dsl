@@ -19,6 +19,7 @@ func main() {
 		return
 	}
 
+	start := time.Now()
 	_, scanner_stream := scanner.Lex("test_lexer", string(file_contents))
 
 	_exit := false
@@ -37,6 +38,8 @@ func main() {
 		}
 	}
 
+	fmt.Println("Scanned in ", time.Since(start))
+
 	grammar := tokens.Grammar{
 		Terminals: []tokens.ItemType{
 			tokens.ItemNumber,
@@ -49,10 +52,22 @@ func main() {
 			tokens.ItemParClosed,
 			tokens.ItemSemicolon,
 			tokens.ItemKeyInt,
+			tokens.ItemKeyBool,
 			tokens.ItemEquals,
 			tokens.ItemScopeOpen,
 			tokens.ItemScopeClose,
 			tokens.ItemComma,
+			tokens.ItemBoolEqual,
+			tokens.ItemBoolNot,
+			tokens.ItemBoolNotEqual,
+			tokens.ItemBoolLess,
+			tokens.ItemBoolLessOrEqual,
+			tokens.ItemBoolGreater,
+			tokens.ItemBoolGreaterOrEqual,
+			tokens.ItemBoolAnd,
+			tokens.ItemBoolOr,
+			tokens.ItemTrue,
+			tokens.ItemFalse,
 		},
 		NonTerminals: []tokens.ItemType{
 			tokens.NTGoal,
@@ -66,13 +81,18 @@ func main() {
 			tokens.NTFunction,
 			tokens.NTArgList,
 			tokens.NTArgument,
+			tokens.NTNExpr,
+			tokens.NTAndTerm,
+			tokens.NTNotTerm,
+			tokens.NTRelExpr,
+			tokens.NTRels,
 		},
 		StartSymbol: tokens.NTGoal,
 	}
 
 	cfg := parser.CreateCFG()
 
-	start := time.Now()
+	start = time.Now()
 	parser := parser.CreateLRParser(grammar, cfg, parser.First(cfg, grammar))
 	fmt.Println("Created parse tables in ", time.Since(start))
 
@@ -92,7 +112,9 @@ func main() {
 	err = parser.Parse(words, cfg, grammar, &storage, &runtime)
 	fmt.Println("Parsed in ", time.Since(start))
 
+	start = time.Now()
 	runtime.Run(&storage)
+	fmt.Println("Program finished in", time.Since(start))
 
 	if err != nil {
 		log.Fatal(err)

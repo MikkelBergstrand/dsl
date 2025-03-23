@@ -34,13 +34,13 @@ type InstrAssign struct {
 func (instr *InstrArithmetic) Execute(runtime *Runtime) {
 	switch instr.Operator {
 	case ADD:
-		runtime.SetInt(instr.Result, runtime.GetInt(instr.A)+runtime.GetInt(instr.B))
+		runtime.Set(instr.Result, runtime.GetInt(instr.A)+runtime.GetInt(instr.B))
 	case MULT:
-		runtime.SetInt(instr.Result, runtime.GetInt(instr.A)*runtime.GetInt(instr.B))
+		runtime.Set(instr.Result, runtime.GetInt(instr.A)*runtime.GetInt(instr.B))
 	case DIV:
-		runtime.SetInt(instr.Result, runtime.GetInt(instr.A)/runtime.GetInt(instr.B))
+		runtime.Set(instr.Result, runtime.GetInt(instr.A)/runtime.GetInt(instr.B))
 	case SUB:
-		runtime.SetInt(instr.Result, runtime.GetInt(instr.A)-runtime.GetInt(instr.B))
+		runtime.Set(instr.Result, runtime.GetInt(instr.A)-runtime.GetInt(instr.B))
 	}
 }
 
@@ -58,11 +58,11 @@ type InstrLoadImmediate struct {
 }
 
 func (instr *InstrLoadImmediate) Execute(runtime *Runtime) {
-	runtime.SetInt(instr.Dest, instr.Value.(int))
+	runtime.Set(instr.Dest, instr.Value)
 }
 
 func (instr *InstrAssign) Execute(runtime *Runtime) {
-	runtime.SetInt(instr.Dest, runtime.GetInt(instr.Source))
+	runtime.Set(instr.Dest, runtime.Get(instr.Source))
 }
 
 type InstructionEcho struct {

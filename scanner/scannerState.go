@@ -54,6 +54,20 @@ func (l *lexer) next() rune {
 	return _rune
 }
 
+func (l *lexer) match(next string, token tokens.ItemType) bool {
+	for i := 0; i < len(next); i++ {
+		ch := l.next()
+		if ch != rune(next[i]) {
+			for j := i; j >= 0; j++ {
+				l.backup()
+			}
+			return false
+		}
+	}
+	l.emit(token)
+	return true
+}
+
 func (l *lexer) ignore() {
 	l.start = l.pos
 }
@@ -111,6 +125,11 @@ func isSpace(c rune) bool {
 	return c == ' ' || c == '\t' || c == '\n'
 }
 
+type tokenMatcher struct {
+	text  string
+	token tokens.ItemType
+}
+
 func lexInsideExpression(l *lexer) stateFn {
 	for {
 		r := l.next()
@@ -118,7 +137,12 @@ func lexInsideExpression(l *lexer) stateFn {
 		if isSpace(r) {
 			l.ignore()
 		} else if r == '=' {
-			l.emit(tokens.ItemEquals)
+			if l.peek() == '=' {
+				l.next()
+				l.emit(tokens.ItemBoolEqual)
+			} else {
+				l.emit(tokens.ItemEquals)
+			}
 			return lexInsideExpression
 		} else if r == '"' {
 			return lexQuote
@@ -147,6 +171,31 @@ func lexInsideExpression(l *lexer) stateFn {
 			l.emit(tokens.ItemScopeClose)
 			return lexInsideExpression
 		} else if r == ',' {
+			l.emit(tokens.ItemComma)
+			return lexInsideExpression
+		} else if r == '<' {
+			if l.peek() == '=' {
+				l.next()
+				l.emit(tokens.ItemBoolLessOrEqual)
+			} else {
+				l.emit(tokens.ItemBoolLess)
+			}
+		} else if r == '>' {
+			if l.peek() == '=' {
+				l.next()
+				l.emit(tokens.ItemBoolGreaterOrEqual)
+			} else {
+				l.emit(tokens.ItemBoolGreater)
+			}
+			l.emit(tokens.ItemComma)
+			return lexInsideExpression
+		} else if r == '!' {
+			if l.peek() == '=' {
+				l.next()
+				l.emit(tokens.ItemBoolNotEqual)
+			} else {
+				l.emit(tokens.ItemBoolNot)
+			}
 			l.emit(tokens.ItemComma)
 			return lexInsideExpression
 		} else if '0' <= r && r <= '9' {
@@ -199,6 +248,12 @@ func lexIdentifier(l *lexer) stateFn {
 	current := l.input[l.start:l.pos]
 	if current == "int" {
 		l.emit(tokens.ItemKeyInt)
+	} else if current == "bool" {
+		l.emit(tokens.ItemKeyBool)
+	} else if current == "false" {
+		l.emit(tokens.ItemFalse)
+	} else if current == "true" {
+		l.emit(tokens.ItemTrue)
 	} else {
 		l.emit(tokens.ItemIdentifier)
 	}
