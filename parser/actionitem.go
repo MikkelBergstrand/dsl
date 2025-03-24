@@ -43,7 +43,7 @@ func validateBooleanArithmetic(a variables.Symbol, b variables.Symbol, op runtim
 
 func booleanArithmetic(words []any, s *storage.Storage, r *runtime.Runtime, op runtime.BooleanOperator) variables.Symbol {
 	a := words[0].(variables.Symbol)
-	b := words[0].(variables.Symbol)
+	b := words[2].(variables.Symbol)
 
 	err := validateBooleanArithmetic(a, b, op)
 	if err != nil {
