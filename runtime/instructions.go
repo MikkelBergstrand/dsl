@@ -4,6 +4,7 @@ import (
 	"dsl/functions"
 	"dsl/variables"
 	"fmt"
+	"slices"
 )
 
 const (
@@ -18,6 +19,33 @@ type Instruction interface {
 }
 
 type Operator int
+type BooleanOperator int
+
+const (
+	EQUALS BooleanOperator = iota
+	NOTEQUALS
+	LESS
+	LESSOREQUAL
+	GREATER
+	GREATEROREQUAL
+	AND
+	OR
+	NOT
+)
+
+func (op BooleanOperator) IsValidFor(t variables.Type) bool {
+	legalBools := []BooleanOperator{EQUALS, NOTEQUALS, AND, OR, NOT}
+	legalInts := []BooleanOperator{EQUALS, NOTEQUALS, LESS, LESSOREQUAL, GREATER, GREATEROREQUAL}
+
+	switch t {
+	case variables.BOOL:
+		return slices.Contains(legalBools, op)
+	case variables.INT:
+		return slices.Contains(legalInts, op)
+	}
+
+	return false
+}
 
 type InstrArithmetic struct {
 	A        variables.Symbol
@@ -41,6 +69,51 @@ func (instr *InstrArithmetic) Execute(runtime *Runtime) {
 		runtime.Set(instr.Result, runtime.GetInt(instr.A)/runtime.GetInt(instr.B))
 	case SUB:
 		runtime.Set(instr.Result, runtime.GetInt(instr.A)-runtime.GetInt(instr.B))
+	}
+}
+
+type InstrCompareInt struct {
+	A        variables.Symbol
+	B        variables.Symbol
+	Operator BooleanOperator
+	Result   variables.Symbol
+}
+
+func (instr *InstrCompareInt) Execute(runtime *Runtime) {
+	switch instr.Operator {
+	case EQUALS:
+		runtime.Set(instr.Result, runtime.GetInt(instr.A) == runtime.GetInt(instr.B))
+	case NOTEQUALS:
+		runtime.Set(instr.Result, runtime.GetInt(instr.A) != runtime.GetInt(instr.B))
+	case LESS:
+		runtime.Set(instr.Result, runtime.GetInt(instr.A) < runtime.GetInt(instr.B))
+	case LESSOREQUAL:
+		runtime.Set(instr.Result, runtime.GetInt(instr.A) <= runtime.GetInt(instr.B))
+	case GREATER:
+		runtime.Set(instr.Result, runtime.GetInt(instr.A) > runtime.GetInt(instr.B))
+	case GREATEROREQUAL:
+		fmt.Println("Comparing")
+		runtime.Set(instr.Result, runtime.GetInt(instr.A) >= runtime.GetInt(instr.B))
+	}
+}
+
+type InstrCompareBool struct {
+	A        variables.Symbol
+	B        variables.Symbol
+	Operator BooleanOperator
+	Result   variables.Symbol
+}
+
+func (instr *InstrCompareBool) Execute(runtime *Runtime) {
+	switch instr.Operator {
+	case EQUALS:
+		runtime.Set(instr.Result, runtime.GetBool(instr.A) == runtime.GetBool(instr.B))
+	case NOTEQUALS:
+		runtime.Set(instr.Result, runtime.GetBool(instr.A) != runtime.GetBool(instr.B))
+	case AND:
+		runtime.Set(instr.Result, runtime.GetBool(instr.A) && runtime.GetBool(instr.B))
+	case OR:
+		runtime.Set(instr.Result, runtime.GetBool(instr.A) || runtime.GetBool(instr.B))
 	}
 }
 

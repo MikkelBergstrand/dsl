@@ -1,5 +1,3 @@
 int a = 3;
-bool b = false;
-echo(a);
-echo(12+a);
-echo2(25, 10);
+bool c = true;
+bool b = a >= 3 & a <= 3;

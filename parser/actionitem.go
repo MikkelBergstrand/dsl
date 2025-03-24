@@ -34,6 +34,41 @@ func intval(s string) int {
 	return intval
 }
 
+func validateBooleanArithmetic(a variables.Symbol, b variables.Symbol, op runtime.BooleanOperator) error {
+	if a.Type != b.Type || !op.IsValidFor(a.Type) {
+		return fmt.Errorf("invalid type comparison of %s and %s", a.Type, b.Type)
+	}
+	return nil
+}
+
+func booleanArithmetic(words []any, s *storage.Storage, r *runtime.Runtime, op runtime.BooleanOperator) variables.Symbol {
+	a := words[0].(variables.Symbol)
+	b := words[0].(variables.Symbol)
+
+	err := validateBooleanArithmetic(a, b, op)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	newaddr := s.NewLiteral(variables.BOOL)
+	if a.Type == variables.BOOL {
+		r.LoadInstruction(&runtime.InstrCompareBool{
+			A:        words[0].(variables.Symbol),
+			B:        words[2].(variables.Symbol),
+			Result:   newaddr,
+			Operator: op,
+		})
+	} else if a.Type == variables.INT {
+		r.LoadInstruction(&runtime.InstrCompareInt{
+			A:        words[0].(variables.Symbol),
+			B:        words[2].(variables.Symbol),
+			Result:   newaddr,
+			Operator: op,
+		})
+	}
+	return newaddr
+}
+
 func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Runtime) any {
 	fmt.Println(rule_id, words)
 	switch rule_id {
@@ -140,10 +175,31 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			First:  words[0].(variables.Symbol),
 			Second: &second,
 		}
-	case 21:
+	case 21: //Initial list item in an argument list
 		return List[variables.Symbol]{
 			First:  words[0].(variables.Symbol),
 			Second: nil}
+	case 23: // a | b
+		return booleanArithmetic(words, storage, r, runtime.OR)
+	case 25: // a & b
+		return booleanArithmetic(words, storage, r, runtime.AND)
+	case 29: // a == b
+		switch words[1].(string) {
+		case "==":
+			return booleanArithmetic(words, storage, r, runtime.EQUALS)
+		case "!=":
+			return booleanArithmetic(words, storage, r, runtime.NOTEQUALS)
+		case "<":
+			return booleanArithmetic(words, storage, r, runtime.LESS)
+		case "<=":
+			return booleanArithmetic(words, storage, r, runtime.LESSOREQUAL)
+		case ">":
+			return booleanArithmetic(words, storage, r, runtime.GREATER)
+		case ">=":
+			return booleanArithmetic(words, storage, r, runtime.GREATEROREQUAL)
+		default:
+			log.Fatalf("Undefined boolean operator.")
+		}
 	case 37: // false
 		addr := storage.NewLiteral(variables.BOOL)
 		r.LoadInstruction(&runtime.InstrLoadImmediate{

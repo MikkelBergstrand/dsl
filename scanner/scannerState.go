@@ -173,6 +173,12 @@ func lexInsideExpression(l *lexer) stateFn {
 		} else if r == ',' {
 			l.emit(tokens.ItemComma)
 			return lexInsideExpression
+		} else if r == '&' {
+			l.emit(tokens.ItemBoolAnd)
+			return lexInsideExpression
+		} else if r == '|' {
+			l.emit(tokens.ItemBoolOr)
+			return lexInsideExpression
 		} else if r == '<' {
 			if l.peek() == '=' {
 				l.next()
@@ -187,7 +193,6 @@ func lexInsideExpression(l *lexer) stateFn {
 			} else {
 				l.emit(tokens.ItemBoolGreater)
 			}
-			l.emit(tokens.ItemComma)
 			return lexInsideExpression
 		} else if r == '!' {
 			if l.peek() == '=' {
@@ -196,7 +201,6 @@ func lexInsideExpression(l *lexer) stateFn {
 			} else {
 				l.emit(tokens.ItemBoolNot)
 			}
-			l.emit(tokens.ItemComma)
 			return lexInsideExpression
 		} else if '0' <= r && r <= '9' {
 			l.backup()

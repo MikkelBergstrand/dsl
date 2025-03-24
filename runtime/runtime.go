@@ -113,12 +113,16 @@ func (r *Runtime) AddressFromSymbol(symbol variables.Symbol) int {
 
 func (s *Runtime) Get(symbol variables.Symbol) any {
 	resolve := s.Variables[s.AddressFromSymbol(symbol)]
-	fmt.Printf("GetInt() = %d from addr %d, symbol %d\n", resolve, s.AddressFromSymbol(symbol), symbol)
+	fmt.Printf("Get() = %v from addr %v, symbol %v\n", resolve, s.AddressFromSymbol(symbol), symbol)
 	return resolve
 }
 
 func (r *Runtime) GetInt(symbol variables.Symbol) int {
 	return r.Get(symbol).(int)
+}
+
+func (r *Runtime) GetBool(symbol variables.Symbol) bool {
+	return r.Get(symbol).(bool)
 }
 
 func (s *Runtime) Set(symbol variables.Symbol, value any) {
