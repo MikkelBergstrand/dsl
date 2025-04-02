@@ -56,10 +56,11 @@ func (s *Storage) NewLiteral(vartype variables.Type) variables.Symbol {
 	return variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1, Type: vartype}
 }
 
-func (s *Storage) NewVariable(vartype variables.Type, name string) variables.Symbol {
+func (s *Storage) NewVariable(vartype variables.Type, name string) (*variables.Symbol, error) {
 	_, exists := s.CurrentScope.VariableAddresses[name]
 	if exists {
 		log.Fatalf("Redeclaration of variable: %s\n", name)
+		return nil, fmt.Errorf("redeclaration of variable: %s\n", name)
 	}
 
 	addr := s.CurrentScope.Offset
@@ -71,7 +72,7 @@ func (s *Storage) NewVariable(vartype variables.Type, name string) variables.Sym
 
 	s.CurrentScope.Offset += 1
 
-	return variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1, Type: vartype}
+	return &variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1, Type: vartype}, nil
 }
 
 func (s *Storage) GetVarAddr(name string) variables.Symbol {

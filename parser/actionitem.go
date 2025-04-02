@@ -118,14 +118,23 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 	case 11:
 		return storage.GetVarAddr(words[0].(string))
 	case 12: // New integer, eg. int a = 3
-		addr := storage.NewVariable(variables.INT, words[1].(string))
+		addr, err := storage.NewVariable(variables.INT, words[1].(string))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if words[3].(variables.Symbol).Type != variables.INT {
+			log.Fatalf("Invalid type assignment: expected int, got %s", words[3].(variables.Symbol).Type.String())
+		}
+
 		r.LoadInstruction(&runtime.InstrAssign{
 			Source: words[3].(variables.Symbol),
-			Dest:   addr,
+			Dest:   *addr,
 		})
-		return addr
+		return *addr
 	case 13: // Reassignment of integer, e.g. a = 3
 		addr := storage.GetVarAddr(words[0].(string))
+
 		r.LoadInstruction(&runtime.InstrAssign{
 			Source: words[2].(variables.Symbol),
 			Dest:   addr,
@@ -215,12 +224,20 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		})
 		return addr
 	case 39: // Declaration boolean
-		addr := storage.NewVariable(variables.BOOL, words[1].(string))
+		addr, err := storage.NewVariable(variables.BOOL, words[1].(string))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if variables.BOOL != words[3].(variables.Symbol).Type {
+			log.Fatalf("type mismatch in assignment of variable '%s'\n", words[1].(string))
+		}
+
 		r.LoadInstruction(&runtime.InstrAssign{
 			Source: words[3].(variables.Symbol),
-			Dest:   addr,
+			Dest:   *addr,
 		})
-		return addr
+		return *addr
 	}
 
 	return words[0]
