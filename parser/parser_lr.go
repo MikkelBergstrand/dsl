@@ -312,7 +312,9 @@ func (parser *LRParser) Parse(words <-chan tokens.Token, cfg CFG, grammar tokens
 			word = <-words
 		case ACTION_ACCEPT:
 			if word.Category == tokens.ItemEOF {
-				return nil // success
+				start, _ := storage.DestroyFunctionScope(runtime) //Destroy the final (outermost) scope
+				runtime.Programcounter = start                    //Set start of program to start of outermost scope.
+				return nil                                        // success
 			} else {
 				return errors.New("syntax error")
 			}

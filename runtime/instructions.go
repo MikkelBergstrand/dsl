@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"dsl/color"
 	"dsl/functions"
 	"dsl/variables"
 	"fmt"
@@ -118,11 +119,11 @@ func (instr *InstrCompareBool) Execute(runtime *Runtime) {
 }
 
 type InstrJmp struct {
-	NewPC int
+	Label string
 }
 
 func (instr *InstrJmp) Execute(runtime *Runtime) {
-	runtime.Programcounter = instr.NewPC - 1
+	runtime.Programcounter = runtime.Labels[instr.Label] - 1 // decrement, since it is autoincremented
 }
 
 type InstrLoadImmediate struct {
@@ -143,18 +144,35 @@ type InstructionEcho struct {
 }
 
 func (instr *InstructionEcho) Execute(runtime *Runtime) {
-	fmt.Println("Echo:", runtime.Variables[runtime.AddressFromSymbol(instr.A)])
+	color.Println(color.Green, "Echo:", runtime.Variables[runtime.AddressFromSymbol(instr.A)])
 }
 
 type InstrCallFunction struct {
-	Func         functions.FunctionDefinition
-	ArgumentList []variables.Symbol
-	AddressStart int
+	PreludeLength int
+	AddressStart  int
 }
 
 func (instr *InstrCallFunction) Execute(runtime *Runtime) {
 	fmt.Println("Calling function: ", instr)
-	runtime.NewAR(instr.AddressStart, len(instr.ArgumentList)+2)
+	// Account for prelude length
+	runtime.PushCall(instr.PreludeLength)
+	runtime.PushAddress(instr.AddressStart)
+}
+
+type InstrBeginScope struct {
+	AddressStart int
+}
+
+func (instr *InstrBeginScope) Execute(runtime *Runtime) {
+	fmt.Println("Calling function: ", instr)
+	runtime.PushAddress(instr.AddressStart)
+}
+
+type InstrEndScope struct{}
+
+func (instr *InstrEndScope) Execute(runtime *Runtime) {
+	fmt.Println("Calling function: ", instr)
+	runtime.PopAddress()
 }
 
 type InstrExitFunction struct {
@@ -163,7 +181,8 @@ type InstrExitFunction struct {
 
 func (instr *InstrExitFunction) Execute(runtime *Runtime) {
 	fmt.Println("Exiting function")
-	runtime.PopAR()
+	runtime.PopCall()
+	runtime.PopAddress()
 }
 
 type InstrDeclareFunction struct {

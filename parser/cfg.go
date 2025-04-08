@@ -162,9 +162,35 @@ func CreateCFG() CFG {
 	})
 
 	cfg.addRule(tokens.NTStatement,
-		cfg_alternative{tokens.ItemKeyBool, tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTExpr, tokens.ItemSemicolon},
-	)
+		cfg_alternative{tokens.ItemKeyBool, tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTExpr, tokens.ItemSemicolon})
 
+	// Note that we dont use NTScopeOpen here, because other parts of the function need to create the scope for us
+	// Closing is done using a special non-terminal, however.
+	cfg.addRule(tokens.NTStatement,
+		cfg_alternative{tokens.ItemFunction, tokens.NTFunctionDefinition, tokens.NTFunctionBody}) //40
+
+	cfg.addRule(tokens.NTFunctionDefinition,
+		cfg_alternative{tokens.ItemIdentifier, tokens.ItemParOpen, tokens.NTArgumentDeclarationList, tokens.ItemParClosed, tokens.NTVarType}) //41
+
+	cfg.addRules(tokens.NTArgumentDeclarationList, []cfg_alternative{
+		{tokens.NTArgumentDeclaration, tokens.ItemComma, tokens.NTArgumentDeclarationList}, //42
+		{tokens.NTArgumentDeclaration}, //43
+	})
+
+	cfg.addRules(tokens.NTArgumentDeclaration, []cfg_alternative{
+		{tokens.NTVarType, tokens.ItemIdentifier}, //44
+	})
+
+	cfg.addRules(tokens.NTVarType, []cfg_alternative{
+		{tokens.ItemKeyBool}, //45
+		{tokens.ItemKeyInt},  //46
+	})
+
+	cfg.addRule(tokens.NTFunctionClose, cfg_alternative{tokens.ItemScopeClose}) // 47
+
+	cfg.addRule(tokens.NTFunctionBody, cfg_alternative{tokens.ItemScopeOpen, tokens.NTStatementList, tokens.NTFunctionClose}) // 48
+
+	fmt.Println("Num rules: ", len(cfg._array))
 	cfg.compile()
 
 	return cfg

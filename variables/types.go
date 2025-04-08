@@ -1,6 +1,9 @@
 package variables
 
-import "log"
+import (
+	"fmt"
+	"log"
+)
 
 type Type int
 
@@ -9,6 +12,19 @@ const (
 	BOOL
 	NONE
 )
+
+func TypeFromString(s string) (Type, error) {
+	switch s {
+	case "int":
+		return INT, nil
+	case "bool":
+		return BOOL, nil
+	case "void":
+		return NONE, nil
+	}
+
+	return NONE, fmt.Errorf("could not resolve %s to a variable type!", s)
+}
 
 func (t Type) String() string {
 	switch t {

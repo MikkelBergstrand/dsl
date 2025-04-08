@@ -1,3 +1,21 @@
-int a = 3;
-bool c = true;
-bool b = a >= 3 | a < 3;
+
+
+func myFunc(int a, int b) int {
+    func myFunc2(int c, int d) int {
+        echo(c);
+        echo(d);
+    }
+
+    {
+        int a = 20;
+    }
+    myFunc2(a, b);
+}
+
+myFunc(1, 2);
+
+int a = 9;
+{
+    a = 5;
+}
+echo(a);

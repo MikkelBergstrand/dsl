@@ -1,11 +1,13 @@
 package main
 
 import (
+	"dsl/functions"
 	"dsl/parser"
 	"dsl/runtime"
 	"dsl/scanner"
 	"dsl/storage"
 	"dsl/tokens"
+	"dsl/variables"
 	"fmt"
 	"log"
 	"os"
@@ -43,6 +45,7 @@ func main() {
 	grammar := tokens.Grammar{
 		Terminals: []tokens.ItemType{
 			tokens.ItemNumber,
+			tokens.ItemText,
 			tokens.ItemOpPlus,
 			tokens.ItemOpMinus,
 			tokens.ItemOpMult,
@@ -68,6 +71,7 @@ func main() {
 			tokens.ItemBoolOr,
 			tokens.ItemTrue,
 			tokens.ItemFalse,
+			tokens.ItemFunction,
 		},
 		NonTerminals: []tokens.ItemType{
 			tokens.NTGoal,
@@ -86,6 +90,12 @@ func main() {
 			tokens.NTNotTerm,
 			tokens.NTRelExpr,
 			tokens.NTRels,
+			tokens.NTArgumentDeclaration,
+			tokens.NTArgumentDeclarationList,
+			tokens.NTVarType,
+			tokens.NTFunctionClose,
+			tokens.NTFunctionDefinition,
+			tokens.NTFunctionBody,
 		},
 		StartSymbol: tokens.NTGoal,
 	}
@@ -106,17 +116,38 @@ func main() {
 	fmt.Println(word_stream)
 
 	storage := storage.NewStorage()
-	runtime := runtime.New(&storage)
+	runtime := runtime.New()
+
+	generateGlobalFunctions(&runtime, &storage)
 
 	start = time.Now()
 	err = parser.Parse(words, cfg, grammar, &storage, &runtime)
-	fmt.Println("Parsed in ", time.Since(start))
-
-	start = time.Now()
-	runtime.Run(&storage)
-	fmt.Println("Program finished in", time.Since(start))
-
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	fmt.Println("Parsed in ", time.Since(start))
+
+	start = time.Now()
+	runtime.Run()
+	fmt.Println("Program finished in", time.Since(start))
+}
+
+func generateGlobalFunctions(rt *runtime.Runtime, storage *storage.Storage) {
+	def := functions.FunctionDefinition{
+		ArgumentList: []functions.Argument{
+			{Type: variables.INT, Identifier: "i"},
+		},
+		ReturnType: variables.NONE,
+	}
+
+	storage.NewFunctionScope(def)
+	storage.NewFunction("echo", def)
+	storage.NewLabel("echo", rt.NextInstruction())
+
+	storage.LoadInstruction(&runtime.InstructionEcho{
+		A: storage.GetVarAddr("i"),
+	})
+	storage.LoadInstruction(&runtime.InstrExitFunction{})
+	storage.DestroyFunctionScope(rt)
 }

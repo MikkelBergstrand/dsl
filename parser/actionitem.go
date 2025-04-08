@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"dsl/functions"
 	"dsl/runtime"
 	"dsl/storage"
 	"dsl/variables"
@@ -41,7 +42,7 @@ func validateBooleanArithmetic(a variables.Symbol, b variables.Symbol, op runtim
 	return nil
 }
 
-func booleanArithmetic(words []any, s *storage.Storage, r *runtime.Runtime, op runtime.BooleanOperator) variables.Symbol {
+func booleanArithmetic(words []any, s *storage.Storage, op runtime.BooleanOperator) variables.Symbol {
 	a := words[0].(variables.Symbol)
 	b := words[2].(variables.Symbol)
 
@@ -52,14 +53,14 @@ func booleanArithmetic(words []any, s *storage.Storage, r *runtime.Runtime, op r
 
 	newaddr := s.NewLiteral(variables.BOOL)
 	if a.Type == variables.BOOL {
-		r.LoadInstruction(&runtime.InstrCompareBool{
+		s.LoadInstruction(&runtime.InstrCompareBool{
 			A:        words[0].(variables.Symbol),
 			B:        words[2].(variables.Symbol),
 			Result:   newaddr,
 			Operator: op,
 		})
 	} else if a.Type == variables.INT {
-		r.LoadInstruction(&runtime.InstrCompareInt{
+		s.LoadInstruction(&runtime.InstrCompareInt{
 			A:        words[0].(variables.Symbol),
 			B:        words[2].(variables.Symbol),
 			Result:   newaddr,
@@ -70,11 +71,11 @@ func booleanArithmetic(words []any, s *storage.Storage, r *runtime.Runtime, op r
 }
 
 func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Runtime) any {
-	fmt.Println(rule_id, words)
+	//fmt.Println(rule_id, words)
 	switch rule_id {
 	case 3:
 		new_addr := storage.NewLiteral(variables.INT)
-		r.LoadInstruction(&runtime.InstrArithmetic{
+		storage.LoadInstruction(&runtime.InstrArithmetic{
 			A:        words[0].(variables.Symbol),
 			B:        words[2].(variables.Symbol),
 			Result:   new_addr,
@@ -83,7 +84,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		return new_addr
 	case 4:
 		new_addr := storage.NewLiteral(variables.INT)
-		r.LoadInstruction(&runtime.InstrArithmetic{
+		storage.LoadInstruction(&runtime.InstrArithmetic{
 			A:        words[0].(variables.Symbol),
 			B:        words[2].(variables.Symbol),
 			Result:   new_addr,
@@ -92,7 +93,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		return new_addr
 	case 6:
 		new_addr := storage.NewLiteral(variables.INT)
-		r.LoadInstruction(&runtime.InstrArithmetic{
+		storage.LoadInstruction(&runtime.InstrArithmetic{
 			A:        words[0].(variables.Symbol),
 			B:        words[2].(variables.Symbol),
 			Result:   new_addr,
@@ -101,7 +102,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		return new_addr
 	case 7:
 		new_addr := storage.NewLiteral(variables.INT)
-		r.LoadInstruction(&runtime.InstrArithmetic{
+		storage.LoadInstruction(&runtime.InstrArithmetic{
 			A:        words[0].(variables.Symbol),
 			B:        words[2].(variables.Symbol),
 			Result:   new_addr,
@@ -110,7 +111,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		return new_addr
 	case 10: //New integer literal
 		addr := storage.NewLiteral(variables.INT)
-		r.LoadInstruction(&runtime.InstrLoadImmediate{
+		storage.LoadInstruction(&runtime.InstrLoadImmediate{
 			Dest:  addr,
 			Value: intval(words[0].(string)),
 		})
@@ -127,7 +128,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			log.Fatalf("Invalid type assignment: expected int, got %s", words[3].(variables.Symbol).Type.String())
 		}
 
-		r.LoadInstruction(&runtime.InstrAssign{
+		storage.LoadInstruction(&runtime.InstrAssign{
 			Source: words[3].(variables.Symbol),
 			Dest:   *addr,
 		})
@@ -135,18 +136,22 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 	case 13: // Reassignment of integer, e.g. a = 3
 		addr := storage.GetVarAddr(words[0].(string))
 
-		r.LoadInstruction(&runtime.InstrAssign{
+		storage.LoadInstruction(&runtime.InstrAssign{
 			Source: words[2].(variables.Symbol),
 			Dest:   addr,
 		})
 		return addr
 	case 16: // Declare scope
+		storage.LoadInstruction(&runtime.InstrBeginScope{
+			AddressStart: storage.CurrentScope.Offset,
+		})
 		storage.NewScope()
 	case 17: // End scope
+		storage.LoadInstruction(&runtime.InstrEndScope{})
 		storage.DestroyScope()
 	case 19: // call function e.g. echo ( 0 )
 		arg_list := (words[2].(List[variables.Symbol])).Iterate()
-		fn := storage.Functions[words[0].(string)]
+		fn := storage.GetFunction(words[0].(string))
 
 		if !fn.ValidateArgumentList(arg_list) {
 			log.Fatalf("Argument list to function %s invalid\n", words[0].(string))
@@ -161,21 +166,20 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			passed_arg_list[i].Scope += 1
 		}
 
-		r.LoadInstruction(&runtime.InstrCallFunction{
-			ArgumentList: arg_list,
-			Func:         fn,
-			AddressStart: storage.CurrentScope.Offset,
+		storage.LoadInstruction(&runtime.InstrCallFunction{
+			AddressStart:  storage.CurrentScope.Offset,
+			PreludeLength: len(fn.ArgumentList) + 2,
 		})
 
 		for i := range fn.ArgumentList {
-			r.LoadInstruction(&runtime.InstrAssign{
+			storage.LoadInstruction(&runtime.InstrAssign{
 				Source: passed_arg_list[i],
-				Dest:   variables.Symbol{Scope: 0, Offset: i}, // For simplicity, parameter i is always stored in the scope with offset i
+				Dest:   variables.Symbol{Scope: 0, Offset: i}, // For simplicity, parameter #i is always stored in the scope with offset i
 			})
 		}
 
-		r.LoadInstruction(&runtime.InstrJmp{
-			NewPC: fn.InstructionPointer,
+		storage.LoadInstruction(&runtime.InstrJmp{
+			Label: words[0].(string),
 		})
 
 	case 20: //argument list construction, input is "symbol , List"
@@ -189,36 +193,36 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			First:  words[0].(variables.Symbol),
 			Second: nil}
 	case 23: // a | b
-		return booleanArithmetic(words, storage, r, runtime.OR)
+		return booleanArithmetic(words, storage, runtime.OR)
 	case 25: // a & b
-		return booleanArithmetic(words, storage, r, runtime.AND)
+		return booleanArithmetic(words, storage, runtime.AND)
 	case 29: // a == b
 		switch words[1].(string) {
 		case "==":
-			return booleanArithmetic(words, storage, r, runtime.EQUALS)
+			return booleanArithmetic(words, storage, runtime.EQUALS)
 		case "!=":
-			return booleanArithmetic(words, storage, r, runtime.NOTEQUALS)
+			return booleanArithmetic(words, storage, runtime.NOTEQUALS)
 		case "<":
-			return booleanArithmetic(words, storage, r, runtime.LESS)
+			return booleanArithmetic(words, storage, runtime.LESS)
 		case "<=":
-			return booleanArithmetic(words, storage, r, runtime.LESSOREQUAL)
+			return booleanArithmetic(words, storage, runtime.LESSOREQUAL)
 		case ">":
-			return booleanArithmetic(words, storage, r, runtime.GREATER)
+			return booleanArithmetic(words, storage, runtime.GREATER)
 		case ">=":
-			return booleanArithmetic(words, storage, r, runtime.GREATEROREQUAL)
+			return booleanArithmetic(words, storage, runtime.GREATEROREQUAL)
 		default:
 			log.Fatalf("Undefined boolean operator.")
 		}
 	case 37: // false
 		addr := storage.NewLiteral(variables.BOOL)
-		r.LoadInstruction(&runtime.InstrLoadImmediate{
+		storage.LoadInstruction(&runtime.InstrLoadImmediate{
 			Dest:  addr,
 			Value: false,
 		})
 		return addr
 	case 38: // true
 		addr := storage.NewLiteral(variables.BOOL)
-		r.LoadInstruction(&runtime.InstrLoadImmediate{
+		storage.LoadInstruction(&runtime.InstrLoadImmediate{
 			Dest:  addr,
 			Value: true,
 		})
@@ -233,11 +237,52 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			log.Fatalf("type mismatch in assignment of variable '%s'\n", words[1].(string))
 		}
 
-		r.LoadInstruction(&runtime.InstrAssign{
+		storage.LoadInstruction(&runtime.InstrAssign{
 			Source: words[3].(variables.Symbol),
 			Dest:   *addr,
 		})
 		return *addr
+	case 41: // Declare new function, format "name ( arglist ) returntype"
+		arg_list := words[2].(List[functions.Argument]).Iterate()
+		ret_type, err := variables.TypeFromString(words[4].(string))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		def := functions.FunctionDefinition{
+			ArgumentList: arg_list,
+			ReturnType:   ret_type,
+		}
+
+		storage.NewFunctionScope(def)
+		storage.NewFunction(words[0].(string), def)
+		storage.NewLabel(words[0].(string), r.NextInstruction())
+
+		return words[0].(string)
+	case 42: //Function argument declaration list, second+ element
+		second := words[2].(List[functions.Argument])
+		return List[functions.Argument]{
+			First:  words[0].(functions.Argument),
+			Second: &second,
+		}
+	case 43: //Function argument declaration list, first element
+		return List[functions.Argument]{
+			First:  words[0].(functions.Argument),
+			Second: nil,
+		}
+	case 44: //Function argument declaration
+		_type, err := variables.TypeFromString(words[0].(string))
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
+
+		return functions.Argument{
+			Type:       _type,
+			Identifier: words[1].(string),
+		}
+	case 47: // Function scope close
+		storage.LoadInstruction(&runtime.InstrExitFunction{})
+		storage.DestroyFunctionScope(r)
 	}
 
 	return words[0]

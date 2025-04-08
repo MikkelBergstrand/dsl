@@ -258,6 +258,8 @@ func lexIdentifier(l *lexer) stateFn {
 		l.emit(tokens.ItemFalse)
 	} else if current == "true" {
 		l.emit(tokens.ItemTrue)
+	} else if current == "func" {
+		l.emit(tokens.ItemFunction)
 	} else {
 		l.emit(tokens.ItemIdentifier)
 	}

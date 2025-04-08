@@ -9,8 +9,12 @@ type Argument struct {
 
 type FunctionDefinition struct {
 	ArgumentList       []Argument
-	InstructionPointer int
 	ReturnType         variables.Type
+}
+
+type FullFunctionDefinition struct {
+	Name               string
+	FunctionDefinition FunctionDefinition
 }
 
 // Verify an argument list of symbols.

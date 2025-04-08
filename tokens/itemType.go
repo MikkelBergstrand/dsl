@@ -44,6 +44,9 @@ const (
 	ItemBoolGreaterOrEqual
 	ItemBoolGreater
 	ItemBoolNotEqual
+	ItemFunction
+	ItemIf
+	ItemElse
 )
 
 const (
@@ -64,16 +67,13 @@ const (
 	NTNotTerm
 	NTRelExpr
 	NTRels
-)
-
-const (
-	TItemParOpen = iota + 1
-	TItemParClosed
-)
-const (
-	NTTGoal ItemType = iota + 1001
-	NTTList
-	NTTPair
+	NTArgumentDeclaration
+	NTArgumentDeclarationList
+	NTVarType
+	NTFunctionClose
+	NTFunctionDefinition
+	NTFunctionBody
+	NTIfStatement
 )
 
 type Grammar struct {
@@ -134,58 +134,5 @@ func (l ItemType) IsNonTerminal() bool {
 var _new_str map[ItemType]string = make(map[ItemType]string)
 
 func (i ItemType) String() string {
-
-	val, ok := _new_str[i]
-	if ok {
-		return val
-	}
-
-	switch i {
-	case NTTGoal:
-		return "Goal"
-	case NTTList:
-		return "List"
-	case NTTPair:
-		return "Pair"
-	case TItemParClosed:
-		return ")"
-	case TItemParOpen:
-		return "("
-	}
-
-	switch i {
-	case NTGoal:
-		return "Goal"
-	case NTExpr:
-		return "Expr"
-	case NTTerm:
-		return "Term"
-	case NTFactor:
-		return "Factor"
-	case ItemOpDiv:
-		return "/"
-	case ItemOpMinus:
-		return "-"
-	case ItemOpPlus:
-		return "+"
-	case ItemOpMult:
-		return "*"
-	case ItemEpsilon:
-		return "eps"
-	case ItemIdentifier:
-		return "name"
-	case ItemNumber:
-		return "num"
-	case ItemEOF:
-		return "eof"
-	case ItemParOpen:
-		return "("
-	case ItemParClosed:
-		return ")"
-	case ItemError:
-		return "err"
-	case ItemSemicolon:
-		return ";"
-	}
 	return strconv.Itoa(int(i))
 }

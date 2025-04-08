@@ -1,114 +1,92 @@
 package runtime
 
 import (
-	"dsl/functions"
-	"dsl/storage"
+	"dsl/color"
 	"dsl/structure"
 	"dsl/variables"
 	"fmt"
 	"reflect"
 )
 
-func generateGlobalFunctions(runtime *Runtime, storage *storage.Storage) {
-	storage.NewFunction("echo", functions.FunctionDefinition{
-		InstructionPointer: runtime.NextInstruction(),
-		ArgumentList: []functions.Argument{
-			{Type: variables.INT, Identifier: "i"},
-		},
-		ReturnType: variables.NONE,
-	})
-
-	storage.NewVariable(variables.INT, "i")
-	runtime.LoadInstruction(&InstructionEcho{
-		A: storage.GetVarAddr("i"),
-	})
-	runtime.LoadInstruction(&InstrExitFunction{})
-	storage.DestroyScope()
-
-	storage.NewFunction("echo2", functions.FunctionDefinition{
-		InstructionPointer: runtime.NextInstruction(),
-		ArgumentList: []functions.Argument{
-			{Type: variables.INT, Identifier: "i"},
-			{Type: variables.INT, Identifier: "j"},
-		},
-		ReturnType: variables.NONE,
-	})
-	storage.NewVariable(variables.INT, "i")
-	storage.NewVariable(variables.INT, "j")
-	runtime.LoadInstruction(&InstructionEcho{
-		A: storage.GetVarAddr("i"),
-	})
-	runtime.LoadInstruction(&InstructionEcho{
-		A: storage.GetVarAddr("j"),
-	})
-	runtime.LoadInstruction(&InstrExitFunction{})
-	storage.DestroyScope()
-
-	runtime.Programcounter = runtime.NextInstruction()
-}
-
 type Runtime struct {
 	Instructions   []Instruction
 	Programcounter int
-	ARStack        structure.Stack[ActivationRegister]
+	Labels         map[string]int
+	CallStack      structure.Stack[int]
+	AddressStack   structure.Stack[int]
 	Variables      []any
 	Addresspointer int
 }
+
+const NIL_PROGRAM_COUNTER = -1000
 
 type ActivationRegister struct {
 	AddressStart   int
 	Programcounter int
 }
 
-func New(storage *storage.Storage) Runtime {
+func New() Runtime {
 	runTime := Runtime{
 		Variables: make([]any, 1000),
+		Labels:    map[string]int{},
 	}
-	generateGlobalFunctions(&runTime, storage)
 
-	runTime.ARStack.Push(ActivationRegister{})
-	fmt.Println("New AR: ", runTime.Programcounter, len(runTime.ARStack))
+	runTime.CallStack.Push(0)
+	runTime.AddressStack.Push(0)
 	return runTime
 }
 
-func (runtime *Runtime) NewAR(addressStart int, preludeLength int) {
-	last_ar := runtime.ARStack.PeekRef()
-	last_ar.Programcounter = runtime.Programcounter + preludeLength - 1
-
-	runtime.ARStack.Push(ActivationRegister{AddressStart: last_ar.AddressStart + addressStart})
-	fmt.Println("New AR: ", runtime.Programcounter, last_ar.AddressStart+addressStart, len(runtime.ARStack))
-
+func (runtime *Runtime) PushAddress(addressStart int) {
+	last_adr := runtime.AddressStack.Peek()
+	runtime.AddressStack.Push(last_adr + addressStart)
+	fmt.Println("Pushed address ", runtime.AddressStack.Peek())
 }
 
-func (runtime *Runtime) PopAR() {
-	runtime.ARStack.Pop()
-	runtime.Programcounter = runtime.ARStack.Peek().Programcounter
-	fmt.Println("Popping AR: ", runtime.Programcounter)
+func (runtime *Runtime) PopAddress() {
+	val := runtime.AddressStack.Pop()
+	fmt.Println("Popped address ", val)
 }
 
-func (runTime *Runtime) LoadInstruction(instruction Instruction) {
-	runTime.Instructions = append(runTime.Instructions, instruction)
+func (runtime *Runtime) PushCall(offset int) {
+	runtime.CallStack.Push(runtime.Programcounter + offset)
+	fmt.Println("Pushed", runtime.CallStack.Peek())
+}
+
+func (runtime *Runtime) PopCall() {
+	val := runtime.CallStack.Pop()
+	fmt.Println("Popped", val)
+	runtime.Programcounter = val - 1
+}
+
+// Add the set of instructions. Return the first and last index of the inserted instructions.
+func (runtime *Runtime) LoadInstructions(instructions []Instruction) (start int, end int) {
+	runtime.Instructions = append(runtime.Instructions, instructions...)
+	start, end = len(runtime.Instructions)-len(instructions), len(runtime.Instructions)-1
+
+	fmt.Println("New instructions added: ", start, end)
+	return start, end
 }
 
 func (runTime *Runtime) NextInstruction() int {
 	return len(runTime.Instructions)
 }
 
-func (runtime *Runtime) Run(storage *storage.Storage) {
-	for _, instr := range runtime.Instructions {
-		fmt.Println(reflect.TypeOf(instr), instr)
+func (runtime *Runtime) Run() {
+
+	for i, instr := range runtime.Instructions {
+		fmt.Println(i, reflect.TypeOf(instr), instr)
 	}
 
 	for runtime.Programcounter < len(runtime.Instructions) {
-		fmt.Println(reflect.TypeOf(runtime.Instructions[runtime.Programcounter]), "PC = ", runtime.Programcounter)
+		color.Println(color.Yellow, reflect.TypeOf(runtime.Instructions[runtime.Programcounter]), "PC = ", runtime.Programcounter)
 		runtime.Instructions[runtime.Programcounter].Execute(runtime)
 		runtime.Programcounter += 1
 	}
 }
 
 func (r *Runtime) AddressFromSymbol(symbol variables.Symbol) int {
-	ar := r.ARStack[len(r.ARStack)-1-symbol.Scope]
-	return ar.AddressStart + symbol.Offset
+	ar := r.AddressStack[len(r.AddressStack)-1-symbol.Scope]
+	return ar + symbol.Offset
 }
 
 func (s *Runtime) Get(symbol variables.Symbol) any {
