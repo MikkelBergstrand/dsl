@@ -42,64 +42,7 @@ func main() {
 
 	fmt.Println("Scanned in ", time.Since(start))
 
-	grammar := tokens.Grammar{
-		Terminals: []tokens.ItemType{
-			tokens.ItemNumber,
-			tokens.ItemText,
-			tokens.ItemOpPlus,
-			tokens.ItemOpMinus,
-			tokens.ItemOpMult,
-			tokens.ItemOpDiv,
-			tokens.ItemIdentifier,
-			tokens.ItemParOpen,
-			tokens.ItemParClosed,
-			tokens.ItemSemicolon,
-			tokens.ItemKeyInt,
-			tokens.ItemKeyBool,
-			tokens.ItemEquals,
-			tokens.ItemScopeOpen,
-			tokens.ItemScopeClose,
-			tokens.ItemComma,
-			tokens.ItemBoolEqual,
-			tokens.ItemBoolNot,
-			tokens.ItemBoolNotEqual,
-			tokens.ItemBoolLess,
-			tokens.ItemBoolLessOrEqual,
-			tokens.ItemBoolGreater,
-			tokens.ItemBoolGreaterOrEqual,
-			tokens.ItemBoolAnd,
-			tokens.ItemBoolOr,
-			tokens.ItemTrue,
-			tokens.ItemFalse,
-			tokens.ItemFunction,
-		},
-		NonTerminals: []tokens.ItemType{
-			tokens.NTGoal,
-			tokens.NTStatement,
-			tokens.NTStatementList,
-			tokens.NTExpr,
-			tokens.NTTerm,
-			tokens.NTFactor,
-			tokens.NTScopeBegin,
-			tokens.NTScopeClose,
-			tokens.NTFunction,
-			tokens.NTArgList,
-			tokens.NTArgument,
-			tokens.NTNExpr,
-			tokens.NTAndTerm,
-			tokens.NTNotTerm,
-			tokens.NTRelExpr,
-			tokens.NTRels,
-			tokens.NTArgumentDeclaration,
-			tokens.NTArgumentDeclarationList,
-			tokens.NTVarType,
-			tokens.NTFunctionClose,
-			tokens.NTFunctionDefinition,
-			tokens.NTFunctionBody,
-		},
-		StartSymbol: tokens.NTGoal,
-	}
-
+	grammar := tokens.NewGrammar(tokens.NTGoal)
 	cfg := parser.CreateCFG()
 
 	start = time.Now()

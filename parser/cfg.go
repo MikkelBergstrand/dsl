@@ -190,6 +190,12 @@ func CreateCFG() CFG {
 
 	cfg.addRule(tokens.NTFunctionBody, cfg_alternative{tokens.ItemScopeOpen, tokens.NTStatementList, tokens.NTFunctionClose}) // 48
 
+	//cfg.addRule(tokens.NTIfStatement, cfg_alternative{tokens.ItemIf, // 49
+	//	tokens.NTExpr,
+	//	tokens.NTScopeBegin,
+	//	tokens.NTStatementList,
+	//	tokens.NTScopeClose})
+
 	fmt.Println("Num rules: ", len(cfg._array))
 	cfg.compile()
 

@@ -15,9 +15,12 @@ const (
 	ItemEOF     ItemType = 10002
 )
 
+const TERMINAL_START = 1
+const NONTERMINAL_START = 1001
+
 const (
 	//TERMINALS
-	ItemNumber ItemType = iota + 1
+	ItemNumber ItemType = iota + TERMINAL_START
 	ItemOpPlus
 	ItemOpMinus
 	ItemOpMult
@@ -47,11 +50,12 @@ const (
 	ItemFunction
 	ItemIf
 	ItemElse
+	TERMINALS_LENGTH
 )
 
 const (
 	//NON-Terminals
-	NTGoal ItemType = iota + 1001
+	NTGoal ItemType = iota + NONTERMINAL_START
 	NTStatement
 	NTStatementList
 	NTExpr
@@ -74,12 +78,27 @@ const (
 	NTFunctionDefinition
 	NTFunctionBody
 	NTIfStatement
+	NONTERMINALS_LENGTH
 )
 
 type Grammar struct {
 	Terminals    []ItemType
 	NonTerminals []ItemType
 	StartSymbol  ItemType
+}
+
+func NewGrammar(startSymbol ItemType) Grammar {
+	grammar := Grammar{
+		StartSymbol: startSymbol,
+	}
+
+	for i := TERMINAL_START; i < int(TERMINALS_LENGTH); i++ {
+		grammar.Terminals = append(grammar.Terminals, ItemType(i))
+	}
+	for i := NONTERMINAL_START; i < int(NONTERMINALS_LENGTH); i++ {
+		grammar.NonTerminals = append(grammar.NonTerminals, ItemType(i))
+	}
+	return grammar
 }
 
 func (grammar *Grammar) MapToArrayindex(item ItemType) int {
