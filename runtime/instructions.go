@@ -158,7 +158,7 @@ type InstructionEcho struct {
 }
 
 func (instr *InstructionEcho) Execute(runtime *Runtime) {
-	color.Println(color.Green, "Echo:", runtime.Variables[runtime.AddressFromSymbol(instr.A)])
+	color.Println(color.Green, runtime.Variables[runtime.AddressFromSymbol(instr.A)])
 }
 
 type InstrCallFunction struct {
@@ -167,7 +167,6 @@ type InstrCallFunction struct {
 }
 
 func (instr *InstrCallFunction) Execute(runtime *Runtime) {
-	fmt.Println("Calling function: ", instr)
 	// Account for prelude length
 	runtime.PushCall(instr.PreludeLength)
 	runtime.PushAddress(instr.AddressStart)
@@ -178,14 +177,12 @@ type InstrBeginScope struct {
 }
 
 func (instr *InstrBeginScope) Execute(runtime *Runtime) {
-	fmt.Println("Calling function: ", instr)
 	runtime.PushAddress(instr.AddressStart)
 }
 
 type InstrEndScope struct{}
 
 func (instr *InstrEndScope) Execute(runtime *Runtime) {
-	fmt.Println("Calling function: ", instr)
 	runtime.PopAddress()
 }
 
@@ -194,11 +191,11 @@ type InstrExitFunction struct {
 }
 
 func (instr *InstrExitFunction) Execute(runtime *Runtime) {
-	fmt.Println("Exiting function")
 	runtime.PopCall()
 	runtime.PopAddress()
 }
 
 // Does nothing.
 type InstrNOP struct{}
+
 func (instr *InstrNOP) Execute(runtime *Runtime) {}

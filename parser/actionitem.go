@@ -285,10 +285,8 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		storage.DestroyFunctionScope(r)
 	case 49: // If statement, NTIfHeader NTLabelledScopeBegin, NTStatementList, NTLabelledScopeClose
 		label := words[0].(string)
-		labelStart := words[1].(*runtime.InstructionLabelPair)
 		labelEnd := words[3].(*runtime.InstructionLabelPair)
 		labelEnd.Label = label
-		fmt.Println(label, labelStart, labelEnd)
 	case 50: //NTLabelledScopeBegin
 		return storage.LoadInstruction(&runtime.InstrNOP{})
 	case 51: //NTLabelledScopeClose

@@ -42,8 +42,6 @@ func NewStorage() Storage {
 func (s *Storage) NewFunction(name string, definition functions.FunctionDefinition) {
 	// Make the function visible in the function's parent scope
 	s.CurrentScope.Parent.Functions[name] = &definition
-
-	fmt.Println("Declared new function", name, definition)
 }
 
 func (s *Storage) NewFunctionScope(definition functions.FunctionDefinition) {
@@ -56,7 +54,6 @@ func (s *Storage) NewFunctionScope(definition functions.FunctionDefinition) {
 }
 
 func (s *Storage) NewScope() *scoped_storage {
-	fmt.Println("Creating scope")
 	s.Scopes = append(s.Scopes, newScopedStorage())
 	s.Scopes[len(s.Scopes)-1].Parent = s.CurrentScope
 	s.CurrentScope = &s.Scopes[len(s.Scopes)-1]
@@ -64,8 +61,6 @@ func (s *Storage) NewScope() *scoped_storage {
 }
 
 func (s *Storage) DestroyFunctionScope(runTime *runtime.Runtime) (int, int) {
-	fmt.Println("Destroying function scope")
-
 	start, end := runTime.LoadInstructions(s.CurrentScope.Instructions)
 
 	s.CurrentScope = s.CurrentScope.Parent
@@ -74,7 +69,6 @@ func (s *Storage) DestroyFunctionScope(runTime *runtime.Runtime) (int, int) {
 }
 
 func (s *Storage) DestroyScope() {
-	fmt.Println("Destroying regular scope")
 	instructions := s.CurrentScope.Instructions
 
 	s.CurrentScope = s.CurrentScope.Parent
@@ -99,8 +93,6 @@ func (s *Storage) NewVariable(vartype variables.Type, name string) (*variables.S
 		Type:   vartype,
 		Offset: addr,
 	}
-	fmt.Printf("Created variable %s of type %s (addr: %d)\n", vartype.String(), name, addr)
-
 	s.CurrentScope.Offset += 1
 
 	return &variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1, Type: vartype}, nil
@@ -175,7 +167,6 @@ func (s *Storage) NewLabel(label string) {
 		log.Fatalf("Label %s overridden by %s!", s.NextLabel, label)
 	}
 	s.NextLabel = label
-	fmt.Printf("Added label %s\n", label)
 }
 
 func (s *Storage) NewAutoLabel() (label string) {

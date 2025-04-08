@@ -6,13 +6,13 @@ func myFunc(int a, int b) int {
         echo(d);
     }
 
-    {
-        int a = 20;
-    }
-    myFunc2(a, b);
+    if a > 0 {
+        myFunc2(a, b);
+        myFunc(a-1, b-1);
+    } 
 }
 
-myFunc(1, 2);
+myFunc(10, 9);
 
 int a = 3;
 if a == 3 {

@@ -15,5 +15,8 @@ const Gray = "\033[37m"
 const White = "\033[97m"
 
 func Println(color string, str ...any) {
-	fmt.Println(color, str, Reset)
+	fmt.Print(color)
+	fmt.Println(str...)
+	fmt.Print(Reset)
+
 }
