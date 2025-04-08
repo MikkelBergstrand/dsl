@@ -14,8 +14,11 @@ func myFunc(int a, int b) int {
 
 myFunc(1, 2);
 
-int a = 9;
-{
+int a = 3;
+if a == 3 {
     a = 5;
+    if a == 4 {
+        a = 7;
+    }
 }
 echo(a);

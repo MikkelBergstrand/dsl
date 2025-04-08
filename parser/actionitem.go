@@ -256,7 +256,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 
 		storage.NewFunctionScope(def)
 		storage.NewFunction(words[0].(string), def)
-		storage.NewLabel(words[0].(string), r.NextInstruction())
+		storage.NewLabel(words[0].(string))
 
 		return words[0].(string)
 	case 42: //Function argument declaration list, second+ element
@@ -283,6 +283,30 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 	case 47: // Function scope close
 		storage.LoadInstruction(&runtime.InstrExitFunction{})
 		storage.DestroyFunctionScope(r)
+	case 49: // If statement, NTIfHeader NTLabelledScopeBegin, NTStatementList, NTLabelledScopeClose
+		label := words[0].(string)
+		labelStart := words[1].(*runtime.InstructionLabelPair)
+		labelEnd := words[3].(*runtime.InstructionLabelPair)
+		labelEnd.Label = label
+		fmt.Println(label, labelStart, labelEnd)
+	case 50: //NTLabelledScopeBegin
+		return storage.LoadInstruction(&runtime.InstrNOP{})
+	case 51: //NTLabelledScopeClose
+		return storage.LoadInstruction(&runtime.InstrNOP{})
+	case 52: //Open Function
+		storage.LoadInstruction(&runtime.InstrNOP{})
+	case 53: //NTIfHeader (if Expr)
+		condition := words[1].(variables.Symbol)
+		label := storage.NewAutoLabel()
+		if condition.Type != variables.BOOL {
+			log.Fatalln("Expected boolean statement in if clause, got", condition.Type)
+		}
+
+		storage.LoadInstruction(&runtime.InstrJmpIf{
+			Condition: condition,
+			Label:     label,
+		})
+		return label
 	}
 
 	return words[0]

@@ -86,7 +86,7 @@ func generateGlobalFunctions(rt *runtime.Runtime, storage *storage.Storage) {
 
 	storage.NewFunctionScope(def)
 	storage.NewFunction("echo", def)
-	storage.NewLabel("echo", rt.NextInstruction())
+	storage.NewLabel("echo")
 
 	storage.LoadInstruction(&runtime.InstructionEcho{
 		A: storage.GetVarAddr("i"),

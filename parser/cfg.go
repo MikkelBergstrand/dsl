@@ -188,14 +188,19 @@ func CreateCFG() CFG {
 
 	cfg.addRule(tokens.NTFunctionClose, cfg_alternative{tokens.ItemScopeClose}) // 47
 
-	cfg.addRule(tokens.NTFunctionBody, cfg_alternative{tokens.ItemScopeOpen, tokens.NTStatementList, tokens.NTFunctionClose}) // 48
+	cfg.addRule(tokens.NTFunctionBody, cfg_alternative{tokens.NTFunctionOpen, tokens.NTStatementList, tokens.NTFunctionClose}) // 48
 
-	//cfg.addRule(tokens.NTIfStatement, cfg_alternative{tokens.ItemIf, // 49
-	//	tokens.NTExpr,
-	//	tokens.NTScopeBegin,
-	//	tokens.NTStatementList,
-	//	tokens.NTScopeClose})
+	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.NTIfHeader, // 49
+		tokens.NTLabelledScopeBegin,
+		tokens.NTStatementList,
+		tokens.NTLabelledScopeClose,
+	})
 
+	cfg.addRule(tokens.NTLabelledScopeBegin, cfg_alternative{tokens.NTScopeBegin}) // 50
+	cfg.addRule(tokens.NTLabelledScopeClose, cfg_alternative{tokens.NTScopeClose}) // 51
+	cfg.addRule(tokens.NTFunctionOpen, cfg_alternative{tokens.ItemScopeOpen})      // 52
+
+	cfg.addRule(tokens.NTIfHeader, cfg_alternative{tokens.ItemIf, tokens.NTExpr}) // 53
 	fmt.Println("Num rules: ", len(cfg._array))
 	cfg.compile()
 

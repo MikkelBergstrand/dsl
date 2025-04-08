@@ -6,11 +6,14 @@ import (
 	"dsl/variables"
 	"fmt"
 	"log"
+	"strconv"
 )
 
 type Storage struct {
 	CurrentScope *scoped_storage
 	Scopes       []scoped_storage
+	LabelIndex   int //Used for auto-generated labels. They must be unique across scopes.
+	NextLabel    string
 }
 
 type scoped_storage struct {
@@ -19,15 +22,13 @@ type scoped_storage struct {
 	VariableAddresses map[string]variables.SymbolTableEntry
 	Functions         map[string]*functions.FunctionDefinition
 	Offset            int
-	Instructions      []runtime.Instruction //Instructions from statements/expressions in the local scope.
-	Labels            map[string]int
+	Instructions      []runtime.InstructionLabelPair //Instructions from statements/expressions in the local scope.
 }
 
 func newScopedStorage() scoped_storage {
 	return scoped_storage{
 		Functions:         make(map[string]*functions.FunctionDefinition),
 		VariableAddresses: make(map[string]variables.SymbolTableEntry),
-		Labels:            make(map[string]int),
 	}
 }
 
@@ -64,31 +65,21 @@ func (s *Storage) NewScope() *scoped_storage {
 
 func (s *Storage) DestroyFunctionScope(runTime *runtime.Runtime) (int, int) {
 	fmt.Println("Destroying function scope")
-	start, end := runTime.LoadInstructions(s.CurrentScope.Instructions)
 
-	// Load labels
-	for label, value := range s.CurrentScope.Labels {
-		runTime.Labels[label] = value
-	}
+	start, end := runTime.LoadInstructions(s.CurrentScope.Instructions)
 
 	s.CurrentScope = s.CurrentScope.Parent
 
-	if s.CurrentScope != nil {
-		// Since DestroyScope emits e-s +1 instructions, all labels in the current scope must be modified to reflect this.
-		for label := range s.CurrentScope.Labels {
-			s.CurrentScope.Labels[label] += end - start + 1
-			runTime.Labels[label] += end - start - 1
-			fmt.Printf("Updated label %s = %d\n", label, s.CurrentScope.Labels[label])
-		}
-	}
 	return start, end
 }
 
 func (s *Storage) DestroyScope() {
 	fmt.Println("Destroying regular scope")
 	instructions := s.CurrentScope.Instructions
+
 	s.CurrentScope = s.CurrentScope.Parent
 	s.CurrentScope.Instructions = append(s.CurrentScope.Instructions, instructions...)
+
 }
 
 func (s *Storage) NewLiteral(vartype variables.Type) variables.Symbol {
@@ -166,11 +157,28 @@ func (s *Storage) GetVarAddr(name string) variables.Symbol {
 	}
 }
 
-func (s *Storage) LoadInstruction(instruction runtime.Instruction) {
-	s.CurrentScope.Instructions = append(s.CurrentScope.Instructions, instruction)
+func (s *Storage) LoadInstruction(instruction runtime.Instruction) *runtime.InstructionLabelPair {
+	s.CurrentScope.Instructions = append(s.CurrentScope.Instructions, runtime.InstructionLabelPair{
+		Instruction: instruction,
+		Label:       s.NextLabel,
+	})
+	s.NextLabel = ""
+	return &s.CurrentScope.Instructions[len(s.CurrentScope.Instructions)-1]
 }
 
-func (s *Storage) NewLabel(label string, address int) {
-	s.CurrentScope.Labels[label] = address
-	fmt.Printf("Added label %s = %d\n", label, address)
+func (s *Storage) InsertInstructionAt(instruction runtime.Instruction, label string, offset int) {
+
+}
+
+func (s *Storage) NewLabel(label string) {
+	if s.NextLabel != "" {
+		log.Fatalf("Label %s overridden by %s!", s.NextLabel, label)
+	}
+	s.NextLabel = label
+	fmt.Printf("Added label %s\n", label)
+}
+
+func (s *Storage) NewAutoLabel() (label string) {
+	s.LabelIndex += 1
+	return strconv.Itoa(s.LabelIndex)
 }

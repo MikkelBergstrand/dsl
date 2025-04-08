@@ -74,10 +74,15 @@ const (
 	NTArgumentDeclaration
 	NTArgumentDeclarationList
 	NTVarType
+	NTFunctionOpen
 	NTFunctionClose
 	NTFunctionDefinition
 	NTFunctionBody
 	NTIfStatement
+	NTLabelledScopeBegin
+	NTLabelledScopeClose
+	NTIfHeader
+
 	NONTERMINALS_LENGTH
 )
 

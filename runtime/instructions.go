@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"dsl/color"
-	"dsl/functions"
 	"dsl/variables"
 	"fmt"
 	"slices"
@@ -15,6 +14,10 @@ const (
 	DIV
 )
 
+type InstructionLabelPair struct {
+	Instruction Instruction
+	Label       string
+}
 type Instruction interface {
 	Execute(*Runtime)
 }
@@ -126,6 +129,17 @@ func (instr *InstrJmp) Execute(runtime *Runtime) {
 	runtime.Programcounter = runtime.Labels[instr.Label] - 1 // decrement, since it is autoincremented
 }
 
+type InstrJmpIf struct {
+	Label     string
+	Condition variables.Symbol
+}
+
+func (instr *InstrJmpIf) Execute(runtime *Runtime) {
+	if !runtime.GetBool(instr.Condition) {
+		runtime.Programcounter = runtime.Labels[instr.Label] - 1
+	}
+}
+
 type InstrLoadImmediate struct {
 	Dest  variables.Symbol
 	Value any
@@ -185,20 +199,6 @@ func (instr *InstrExitFunction) Execute(runtime *Runtime) {
 	runtime.PopAddress()
 }
 
-type InstrDeclareFunction struct {
-	AddressPointer int
-	Identifier     string
-	ArgumentList   []functions.Argument
-	ReturnType     variables.Type
-}
-
-func (instr *InstrDeclareFunction) Execute(runtime *Runtime) {
-	fmt.Println("Declaring new function", instr)
-}
-
-type InstrEndDeclareFunction struct {
-}
-
-func (instr *InstrEndDeclareFunction) Execute(runtime *Runtime) {
-	fmt.Println("End declaration of function.")
-}
+// Does nothing.
+type InstrNOP struct{}
+func (instr *InstrNOP) Execute(runtime *Runtime) {}

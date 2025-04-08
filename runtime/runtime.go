@@ -59,8 +59,14 @@ func (runtime *Runtime) PopCall() {
 }
 
 // Add the set of instructions. Return the first and last index of the inserted instructions.
-func (runtime *Runtime) LoadInstructions(instructions []Instruction) (start int, end int) {
-	runtime.Instructions = append(runtime.Instructions, instructions...)
+func (runtime *Runtime) LoadInstructions(instructions []InstructionLabelPair) (start int, end int) {
+	for _, pair := range instructions {
+		runtime.Instructions = append(runtime.Instructions, pair.Instruction)
+		if pair.Label != "" {
+			runtime.Labels[pair.Label] = len(runtime.Instructions) - 1
+			fmt.Printf("Added label %s = %d\n", pair.Label, runtime.Labels[pair.Label])
+		}
+	}
 	start, end = len(runtime.Instructions)-len(instructions), len(runtime.Instructions)-1
 
 	fmt.Println("New instructions added: ", start, end)
@@ -73,6 +79,7 @@ func (runTime *Runtime) NextInstruction() int {
 
 func (runtime *Runtime) Run() {
 
+	fmt.Println(runtime.Labels)
 	for i, instr := range runtime.Instructions {
 		fmt.Println(i, reflect.TypeOf(instr), instr)
 	}
