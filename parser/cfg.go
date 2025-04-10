@@ -191,16 +191,27 @@ func CreateCFG() CFG {
 	cfg.addRule(tokens.NTFunctionBody, cfg_alternative{tokens.NTFunctionOpen, tokens.NTStatementList, tokens.NTFunctionClose}) // 48
 
 	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.NTIfHeader, // 49
-		tokens.NTLabelledScopeBegin,
+		tokens.NTScopeBegin,
 		tokens.NTStatementList,
 		tokens.NTLabelledScopeClose,
 	})
 
-	cfg.addRule(tokens.NTLabelledScopeBegin, cfg_alternative{tokens.NTScopeBegin}) // 50
-	cfg.addRule(tokens.NTLabelledScopeClose, cfg_alternative{tokens.NTScopeClose}) // 51
-	cfg.addRule(tokens.NTFunctionOpen, cfg_alternative{tokens.ItemScopeOpen})      // 52
+	cfg.addRule(tokens.NTLabelledScopeBegin, cfg_alternative{tokens.ItemScopeOpen})  // 50
+	cfg.addRule(tokens.NTLabelledScopeClose, cfg_alternative{tokens.ItemScopeClose}) // 51
+	cfg.addRule(tokens.NTFunctionOpen, cfg_alternative{tokens.ItemScopeOpen})        // 52
 
 	cfg.addRule(tokens.NTIfHeader, cfg_alternative{tokens.ItemIf, tokens.NTExpr}) // 53
+
+	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.NTIfHeader, tokens.NTScopeBegin, tokens.NTStatementList, tokens.NTEndConditionalScope,
+		tokens.NTWithElse}) // 54
+
+	cfg.addRule(tokens.NTWithElse, cfg_alternative{tokens.NTBeginElseIf, tokens.NTIfHeader, tokens.NTScopeBegin, tokens.NTStatementList, tokens.NTEndConditionalScope,
+		tokens.NTWithElse}) // 55
+	cfg.addRule(tokens.NTWithElse,
+		cfg_alternative{tokens.NTBeginElseIf, tokens.NTIfHeader, tokens.NTScopeBegin, tokens.NTStatementList, tokens.NTLabelledScopeClose}) // 56
+	cfg.addRule(tokens.NTWithElse, cfg_alternative{tokens.ItemElse, tokens.NTLabelledScopeBegin, tokens.NTStatementList, tokens.NTLabelledScopeClose}) // 57
+	cfg.addRule(tokens.NTEndConditionalScope, cfg_alternative{tokens.NTScopeClose})                                                                    // 58
+	cfg.addRule(tokens.NTBeginElseIf, cfg_alternative{tokens.ItemElse})                                                                                //59
 	fmt.Println("Num rules: ", len(cfg._array))
 	cfg.compile()
 

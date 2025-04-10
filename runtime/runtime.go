@@ -1,9 +1,11 @@
 package runtime
 
 import (
+	"dsl/color"
 	"dsl/structure"
 	"dsl/variables"
 	"fmt"
+	"log"
 	"reflect"
 )
 
@@ -33,6 +35,14 @@ func New() Runtime {
 	runTime.CallStack.Push(0)
 	runTime.AddressStack.Push(0)
 	return runTime
+}
+
+func (runtime *Runtime) GetLabel(label string) int {
+	value, ok := runtime.Labels[label]
+	if !ok {
+		log.Fatalf("No such label %s", label)
+	}
+	return value
 }
 
 func (runtime *Runtime) PushAddress(addressStart int) {
@@ -77,7 +87,7 @@ func (runtime *Runtime) Run() {
 	}
 
 	for runtime.Programcounter < len(runtime.Instructions) {
-		//color.Println(color.Yellow, reflect.TypeOf(runtime.Instructions[runtime.Programcounter]), "PC = ", runtime.Programcounter)
+		color.Println(color.Yellow, reflect.TypeOf(runtime.Instructions[runtime.Programcounter]), "PC = ", runtime.Programcounter)
 		runtime.Instructions[runtime.Programcounter].Execute(runtime)
 		runtime.Programcounter += 1
 	}

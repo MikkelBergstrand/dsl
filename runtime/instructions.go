@@ -126,7 +126,7 @@ type InstrJmp struct {
 }
 
 func (instr *InstrJmp) Execute(runtime *Runtime) {
-	runtime.Programcounter = runtime.Labels[instr.Label] - 1 // decrement, since it is autoincremented
+	runtime.Programcounter = runtime.GetLabel(instr.Label) - 1 // decrement, since it is autoincremented
 }
 
 type InstrJmpIf struct {
@@ -136,7 +136,7 @@ type InstrJmpIf struct {
 
 func (instr *InstrJmpIf) Execute(runtime *Runtime) {
 	if !runtime.GetBool(instr.Condition) {
-		runtime.Programcounter = runtime.Labels[instr.Label] - 1
+		runtime.Programcounter = runtime.GetLabel(instr.Label) - 1
 	}
 }
 

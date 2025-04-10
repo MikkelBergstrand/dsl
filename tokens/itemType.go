@@ -82,7 +82,9 @@ const (
 	NTLabelledScopeBegin
 	NTLabelledScopeClose
 	NTIfHeader
-
+	NTWithElse
+	NTEndConditionalScope
+	NTBeginElseIf
 	NONTERMINALS_LENGTH
 )
 

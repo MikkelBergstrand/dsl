@@ -149,6 +149,11 @@ func (s *Storage) GetVarAddr(name string) variables.Symbol {
 	}
 }
 
+func (s *Storage) LoadLabeledInstruction(instruction runtime.Instruction, label string) *runtime.InstructionLabelPair {
+	instr := s.LoadInstruction(instruction)
+	instr.Label = label
+	return instr
+}
 func (s *Storage) LoadInstruction(instruction runtime.Instruction) *runtime.InstructionLabelPair {
 	s.CurrentScope.Instructions = append(s.CurrentScope.Instructions, runtime.InstructionLabelPair{
 		Instruction: instruction,

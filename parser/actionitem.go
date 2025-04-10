@@ -10,6 +10,12 @@ import (
 	"strconv"
 )
 
+type condition_tree_entry struct {
+	start_label string
+	end         *runtime.InstructionLabelPair // Instruction at the end of a conditonal block. Can be nil, if no block follows it.
+	jmp         *runtime.InstrJmpIf           // Instruction that starts the conditional block, of type InstrJmpIf. Can again be nil, for else statement.
+}
+
 type List[T any] struct {
 	First  T
 	Second *List[T]
@@ -71,7 +77,7 @@ func booleanArithmetic(words []any, s *storage.Storage, op runtime.BooleanOperat
 }
 
 func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Runtime) any {
-	//fmt.Println(rule_id, words)
+	fmt.Println(rule_id, words)
 	switch rule_id {
 	case 3:
 		new_addr := storage.NewLiteral(variables.INT)
@@ -273,7 +279,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 	case 44: //Function argument declaration
 		_type, err := variables.TypeFromString(words[0].(string))
 		if err != nil {
-			log.Fatalf(err.Error())
+			log.Fatalln(err.Error())
 		}
 
 		return functions.Argument{
@@ -284,26 +290,101 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		storage.LoadInstruction(&runtime.InstrExitFunction{})
 		storage.DestroyFunctionScope(r)
 	case 49: // If statement, NTIfHeader NTLabelledScopeBegin, NTStatementList, NTLabelledScopeClose
-		label := words[0].(string)
-		labelEnd := words[3].(*runtime.InstructionLabelPair)
-		labelEnd.Label = label
+		jmpIfInstr := words[0].(*runtime.InstrJmpIf)
+		instrEnd := words[3].(*runtime.InstructionLabelPair)
+		jmpIfInstr.Label = instrEnd.Label
 	case 50: //NTLabelledScopeBegin
-		return storage.LoadInstruction(&runtime.InstrNOP{})
+		instr := storage.LoadLabeledInstruction(&runtime.InstrBeginScope{
+			AddressStart: storage.CurrentScope.Offset,
+		}, storage.NewAutoLabel())
+		storage.NewScope()
+		return instr
 	case 51: //NTLabelledScopeClose
-		return storage.LoadInstruction(&runtime.InstrNOP{})
+		storage.LoadInstruction(&runtime.InstrEndScope{})
+		storage.DestroyScope()
+
+		return storage.LoadLabeledInstruction(&runtime.InstrNOP{}, storage.NewAutoLabel())
+
 	case 52: //Open Function
 		storage.LoadInstruction(&runtime.InstrNOP{})
 	case 53: //NTIfHeader (if Expr)
 		condition := words[1].(variables.Symbol)
-		label := storage.NewAutoLabel()
 		if condition.Type != variables.BOOL {
 			log.Fatalln("Expected boolean statement in if clause, got", condition.Type)
 		}
 
-		storage.LoadInstruction(&runtime.InstrJmpIf{
+		instr := storage.LoadInstruction(&runtime.InstrJmpIf{
 			Condition: condition,
-			Label:     label,
+			Label:     "", // will be set later.
 		})
+		jmp_instr := instr.Instruction.(*runtime.InstrJmpIf)
+		return jmp_instr
+	case 54: //If statement + WithElse
+		jmpIfInstr := words[0].(*runtime.InstrJmpIf)
+		jmpInstr := words[3].(*runtime.InstructionLabelPair)
+		tree := words[4].(List[condition_tree_entry])
+
+		// Add the first if clause to the tree.
+		final_tree := List[condition_tree_entry]{
+			First:  condition_tree_entry{start_label: "", jmp: jmpIfInstr, end: jmpInstr},
+			Second: &tree,
+		}
+
+		tree_list := final_tree.Iterate()
+		fmt.Println(len(tree_list))
+		for i := range len(tree_list) - 1 {
+			// Make so all JumpIfs (which begins each conditional block) jump to the next condition
+			// Except the final one, which escapes the runtime
+			tree_list[i].jmp.Label = tree_list[i+1].start_label
+			// Make so all Jumps (which ends each condition block) jump to the end of the conditional
+			tree_list[i].end.Instruction.(*runtime.InstrJmp).Label = tree_list[len(tree_list)-1].end.Label
+		}
+	case 55: //WithElse, else if statement, with continuation
+		jmp := words[1].(*runtime.InstrJmpIf)
+		end := words[4].(*runtime.InstructionLabelPair)
+		list := words[5].(List[condition_tree_entry])
+
+		return List[condition_tree_entry]{
+			First: condition_tree_entry{
+				start_label: words[0].(string),
+				jmp:         jmp,
+				end:         end,
+			},
+			Second: &list,
+		}
+	case 56: //WithElse, else if statement, no continuation
+		jmp_if := words[1].(*runtime.InstrJmpIf)
+		end := words[4].(*runtime.InstructionLabelPair)
+
+		return List[condition_tree_entry]{
+			First: condition_tree_entry{
+				start_label: words[0].(string),
+				jmp:         jmp_if,
+				end:         end,
+			},
+			Second: nil,
+		}
+
+	case 57: //WithElse, else condition
+		// Set label to first instruction, as this is not labelled (else condition has no JmpIf clause)
+		start := words[1].(*runtime.InstructionLabelPair)
+		end := words[3].(*runtime.InstructionLabelPair)
+
+		return List[condition_tree_entry]{
+
+			First: condition_tree_entry{
+				start_label: start.Label,
+				jmp:         nil,
+				end:         end,
+			},
+			Second: nil,
+		}
+	case 58: // End conditional statement that is part of a larger conditional statement
+		// At end of conditional block, we must jump to skip over the other conditionals
+		return storage.LoadInstruction(&runtime.InstrJmp{})
+	case 59:
+		label := storage.NewAutoLabel()
+		storage.NewLabel(label)
 		return label
 	}
 
