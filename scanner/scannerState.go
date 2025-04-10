@@ -265,6 +265,8 @@ func lexIdentifier(l *lexer) stateFn {
 		l.emit(tokens.ItemFunction)
 	} else if current == "if" {
 		l.emit(tokens.ItemIf)
+	} else if current == "return" {
+		l.emit(tokens.ItemReturn)
 	} else if current == "else" {
 		l.emit(tokens.ItemElse)
 	} else {

@@ -212,7 +212,8 @@ func CreateCFG() CFG {
 	cfg.addRule(tokens.NTWithElse, cfg_alternative{tokens.ItemElse, tokens.NTLabelledScopeBegin, tokens.NTStatementList, tokens.NTLabelledScopeClose}) // 57
 	cfg.addRule(tokens.NTEndConditionalScope, cfg_alternative{tokens.NTScopeClose})                                                                    // 58
 	cfg.addRule(tokens.NTBeginElseIf, cfg_alternative{tokens.ItemElse})                                                                                //59
-	cfg.addRule(tokens.NTTerm, cfg_alternative{tokens.NTTerm, tokens.ItemOpMod, tokens.NTFactor}) // 60
+	cfg.addRule(tokens.NTTerm, cfg_alternative{tokens.NTTerm, tokens.ItemOpMod, tokens.NTFactor})                                                      // 60
+	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.ItemReturn, tokens.NTExpr, tokens.ItemSemicolon})                                           // 61
 	fmt.Println("Num rules: ", len(cfg._array))
 	cfg.compile()
 

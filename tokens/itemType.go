@@ -51,6 +51,7 @@ const (
 	ItemFunction
 	ItemIf
 	ItemElse
+	ItemReturn
 	TERMINALS_LENGTH
 )
 

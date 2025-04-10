@@ -24,3 +24,7 @@ func (stack *Stack[K]) Peek() K {
 func (stack *Stack[K]) PeekRef() *K {
 	return &(*stack)[len(*stack)-1]
 }
+
+func (stack *Stack[K]) PeekDepth(d int) *K {
+	return &(*stack)[len(*stack)-d-1]
+}

@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"dsl/color"
 	"dsl/structure"
 	"dsl/variables"
 	"fmt"
@@ -12,17 +13,17 @@ type Runtime struct {
 	Instructions   []Instruction
 	Programcounter int
 	Labels         map[string]int
-	CallStack      structure.Stack[int]
+	CallStack      structure.Stack[ActivationRegister]
 	AddressStack   structure.Stack[int]
 	Variables      []any
+	StackTop       int
 	Addresspointer int
 }
 
-const NIL_PROGRAM_COUNTER = -1000
-
 type ActivationRegister struct {
-	AddressStart   int
-	Programcounter int
+	SavedPC            int
+	Retval             variables.Symbol
+	AddressStackLength int
 }
 
 func New() Runtime {
@@ -31,7 +32,7 @@ func New() Runtime {
 		Labels:    map[string]int{},
 	}
 
-	runTime.CallStack.Push(0)
+	runTime.CallStack.Push(ActivationRegister{SavedPC: 0})
 	runTime.AddressStack.Push(0)
 	return runTime
 }
@@ -44,22 +45,25 @@ func (runtime *Runtime) GetLabel(label string) int {
 	return value
 }
 
-func (runtime *Runtime) PushAddress(addressStart int) {
-	last_adr := runtime.AddressStack.Peek()
-	runtime.AddressStack.Push(last_adr + addressStart)
+func (runtime *Runtime) PushAddress() {
+	runtime.AddressStack.Push(runtime.StackTop)
 }
 
 func (runtime *Runtime) PopAddress() {
-	runtime.AddressStack.Pop()
+	runtime.StackTop = runtime.AddressStack.Pop()
 }
 
 func (runtime *Runtime) PushCall(offset int) {
-	runtime.CallStack.Push(runtime.Programcounter + offset)
+	runtime.CallStack.Push(ActivationRegister{SavedPC: runtime.Programcounter + offset, AddressStackLength: len(runtime.AddressStack)})
 }
 
 func (runtime *Runtime) PopCall() {
 	val := runtime.CallStack.Pop()
-	runtime.Programcounter = val - 1
+	runtime.Programcounter = val.SavedPC - 1
+
+	for len(runtime.AddressStack) != val.AddressStackLength {
+		runtime.PopAddress()
+	}
 }
 
 // Add the set of instructions. Return the first and last index of the inserted instructions.
@@ -86,7 +90,7 @@ func (runtime *Runtime) Run() {
 	}
 
 	for runtime.Programcounter < len(runtime.Instructions) {
-		//color.Println(color.Yellow, reflect.TypeOf(runtime.Instructions[runtime.Programcounter]), "PC = ", runtime.Programcounter)
+		color.Println(color.Yellow, reflect.TypeOf(runtime.Instructions[runtime.Programcounter]), "PC = ", runtime.Programcounter)
 		runtime.Instructions[runtime.Programcounter].Execute(runtime)
 		runtime.Programcounter += 1
 	}
@@ -99,6 +103,8 @@ func (r *Runtime) AddressFromSymbol(symbol variables.Symbol) int {
 
 func (s *Runtime) Get(symbol variables.Symbol) any {
 	resolve := s.Variables[s.AddressFromSymbol(symbol)]
+
+	fmt.Println("Get", symbol, resolve)
 	return resolve
 }
 
@@ -115,4 +121,8 @@ func (r *Runtime) GetBool(symbol variables.Symbol) bool {
 func (s *Runtime) Set(symbol variables.Symbol, value any) {
 	addr := s.AddressFromSymbol(symbol)
 	s.Variables[addr] = value
+	if addr > s.StackTop {
+		s.StackTop = addr
+	}
+	fmt.Println("Set", symbol, value, addr)
 }

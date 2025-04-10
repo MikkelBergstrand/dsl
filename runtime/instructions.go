@@ -166,21 +166,24 @@ func (instr *InstructionEcho) Execute(runtime *Runtime) {
 
 type InstrCallFunction struct {
 	PreludeLength int
-	AddressStart  int
+	RetVal        variables.Symbol
 }
 
 func (instr *InstrCallFunction) Execute(runtime *Runtime) {
+	// Bind return value
+	top_ar := runtime.CallStack.PeekRef()
+	top_ar.Retval = instr.RetVal
+	fmt.Println("Bound ret val to", top_ar.Retval)
+
 	// Account for prelude length
 	runtime.PushCall(instr.PreludeLength)
-	runtime.PushAddress(instr.AddressStart)
+	runtime.PushAddress()
 }
 
-type InstrBeginScope struct {
-	AddressStart int
-}
+type InstrBeginScope struct{}
 
 func (instr *InstrBeginScope) Execute(runtime *Runtime) {
-	runtime.PushAddress(instr.AddressStart)
+	runtime.PushAddress()
 }
 
 type InstrEndScope struct{}
@@ -190,12 +193,17 @@ func (instr *InstrEndScope) Execute(runtime *Runtime) {
 }
 
 type InstrExitFunction struct {
-	RetVal int
+	RetVal variables.Symbol
 }
 
 func (instr *InstrExitFunction) Execute(runtime *Runtime) {
+	src_val := runtime.Get(instr.RetVal)
+
 	runtime.PopCall()
-	runtime.PopAddress()
+	top_ar := runtime.CallStack.PeekRef()
+
+	fmt.Println("Ret val on exit", top_ar.Retval, src_val)
+	runtime.Set(top_ar.Retval, src_val)
 }
 
 // Does nothing.

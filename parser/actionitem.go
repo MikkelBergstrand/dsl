@@ -148,9 +148,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		})
 		return addr
 	case 16: // Declare scope
-		storage.LoadInstruction(&runtime.InstrBeginScope{
-			AddressStart: storage.CurrentScope.Offset,
-		})
+		storage.LoadInstruction(&runtime.InstrBeginScope{})
 		storage.NewScope()
 	case 17: // End scope
 		storage.LoadInstruction(&runtime.InstrEndScope{})
@@ -172,9 +170,10 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			passed_arg_list[i].Scope += 1
 		}
 
+		ret_val := storage.NewLiteral(fn.ReturnType)
 		storage.LoadInstruction(&runtime.InstrCallFunction{
-			AddressStart:  storage.CurrentScope.Offset,
 			PreludeLength: len(fn.ArgumentList) + 2,
+			RetVal:        ret_val,
 		})
 
 		for i := range fn.ArgumentList {
@@ -187,6 +186,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		storage.LoadInstruction(&runtime.InstrJmp{
 			Label: words[0].(string),
 		})
+		return ret_val
 
 	case 20: //argument list construction, input is "symbol , List"
 		second := words[2].(List[variables.Symbol])
@@ -294,9 +294,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		instrEnd := words[3].(*runtime.InstructionLabelPair)
 		jmpIfInstr.Label = instrEnd.Label
 	case 50: //NTLabelledScopeBegin
-		instr := storage.LoadLabeledInstruction(&runtime.InstrBeginScope{
-			AddressStart: storage.CurrentScope.Offset,
-		}, storage.NewAutoLabel())
+		instr := storage.LoadLabeledInstruction(&runtime.InstrBeginScope{}, storage.NewAutoLabel())
 		storage.NewScope()
 		return instr
 	case 51: //NTLabelledScopeClose
@@ -382,11 +380,11 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 	case 58: // End conditional statement that is part of a larger conditional statement
 		// At end of conditional block, we must jump to skip over the other conditionals
 		return storage.LoadInstruction(&runtime.InstrJmp{})
-	case 59:
+	case 59: // NTBeginElseIf, used to label the first instruction in the else-if construct.
 		label := storage.NewAutoLabel()
 		storage.NewLabel(label)
 		return label
-	case 60:
+	case 60: // arithmetic: modulo
 		new_addr := storage.NewLiteral(variables.INT)
 		storage.LoadInstruction(&runtime.InstrArithmetic{
 			A:        words[0].(variables.Symbol),
@@ -395,7 +393,10 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			Operator: runtime.MOD,
 		})
 		return new_addr
-		
+	case 61: // return Expr
+		storage.LoadInstruction(&runtime.InstrExitFunction{
+			RetVal: words[1].(variables.Symbol),
+		})
 	}
 
 	return words[0]

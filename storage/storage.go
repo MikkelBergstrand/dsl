@@ -18,7 +18,6 @@ type Storage struct {
 
 type scoped_storage struct {
 	Parent            *scoped_storage
-	RetVal            int
 	VariableAddresses map[string]variables.SymbolTableEntry
 	Functions         map[string]*functions.FunctionDefinition
 	Offset            int
@@ -47,7 +46,7 @@ func (s *Storage) NewFunction(name string, definition functions.FunctionDefiniti
 func (s *Storage) NewFunctionScope(definition functions.FunctionDefinition) {
 	s.NewScope()
 
-	// Create variable entries for the argument. They are placed first in the function's symbol table
+	// Create variable entries for the arguments. They are placed first in the function's symbol table
 	for _, arg := range definition.ArgumentList {
 		s.NewVariable(arg.Type, arg.Identifier)
 	}
