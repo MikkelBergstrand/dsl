@@ -12,6 +12,7 @@ const (
 	SUB
 	MULT
 	DIV
+	MOD
 )
 
 type InstructionLabelPair struct {
@@ -73,6 +74,8 @@ func (instr *InstrArithmetic) Execute(runtime *Runtime) {
 		runtime.Set(instr.Result, runtime.GetInt(instr.A)/runtime.GetInt(instr.B))
 	case SUB:
 		runtime.Set(instr.Result, runtime.GetInt(instr.A)-runtime.GetInt(instr.B))
+	case MOD:
+		runtime.Set(instr.Result, runtime.GetInt(instr.A)%runtime.GetInt(instr.B))
 	}
 }
 

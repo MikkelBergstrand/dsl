@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"dsl/color"
 	"dsl/structure"
 	"dsl/variables"
 	"fmt"
@@ -87,7 +86,7 @@ func (runtime *Runtime) Run() {
 	}
 
 	for runtime.Programcounter < len(runtime.Instructions) {
-		color.Println(color.Yellow, reflect.TypeOf(runtime.Instructions[runtime.Programcounter]), "PC = ", runtime.Programcounter)
+		//color.Println(color.Yellow, reflect.TypeOf(runtime.Instructions[runtime.Programcounter]), "PC = ", runtime.Programcounter)
 		runtime.Instructions[runtime.Programcounter].Execute(runtime)
 		runtime.Programcounter += 1
 	}
@@ -104,7 +103,9 @@ func (s *Runtime) Get(symbol variables.Symbol) any {
 }
 
 func (r *Runtime) GetInt(symbol variables.Symbol) int {
-	return r.Get(symbol).(int)
+	val := r.Get(symbol).(int)
+
+	return val
 }
 
 func (r *Runtime) GetBool(symbol variables.Symbol) bool {

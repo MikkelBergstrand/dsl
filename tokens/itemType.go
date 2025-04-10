@@ -25,6 +25,7 @@ const (
 	ItemOpMinus
 	ItemOpMult
 	ItemOpDiv
+	ItemOpMod
 	ItemIdentifier // starts with [a-zA-Z_], followed by [a-zA-Z0-9_]
 	ItemParOpen
 	ItemParClosed

@@ -158,6 +158,9 @@ func lexInsideExpression(l *lexer) stateFn {
 		} else if r == '/' {
 			l.emit(tokens.ItemOpDiv)
 			return lexInsideExpression
+		} else if r == '%' {
+			l.emit(tokens.ItemOpMod)
+			return lexInsideExpression
 		} else if r == '(' {
 			l.emit(tokens.ItemParOpen)
 			return lexInsideExpression

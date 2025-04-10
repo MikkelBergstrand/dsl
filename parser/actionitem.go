@@ -386,6 +386,16 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		label := storage.NewAutoLabel()
 		storage.NewLabel(label)
 		return label
+	case 60:
+		new_addr := storage.NewLiteral(variables.INT)
+		storage.LoadInstruction(&runtime.InstrArithmetic{
+			A:        words[0].(variables.Symbol),
+			B:        words[2].(variables.Symbol),
+			Result:   new_addr,
+			Operator: runtime.MOD,
+		})
+		return new_addr
+		
 	}
 
 	return words[0]

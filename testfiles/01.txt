@@ -1,4 +1,17 @@
 
+func foo(int a) int {
+  if a % 3 == 0 {
+    echo(10);
+  } else if a % 5 == 0 {
+    echo(100);
+  } else {
+    echo(a);
+  }
+
+  if a > 0 {
+    foo(a-1);
+  }
+}
 
 int a = 3;
 int b = 3;
@@ -17,3 +30,5 @@ if a == 3 {
 echo(a);
 
 echo(b);
+
+foo(15);
