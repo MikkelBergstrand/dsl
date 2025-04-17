@@ -1,12 +1,4 @@
 
-func doSomething2(int b) int {
-  if b == 2 {
-    return 1; 
-  } else {
-    return 0; 
-  }
-}
-
 func doSomething(int a) int {
   if a == 0 {
     return 5;
@@ -17,5 +9,5 @@ func doSomething(int a) int {
   }
 }
 
-int a = doSomething(1) + doSomething2(1);
+int a = doSomething(0);
 echo(a);

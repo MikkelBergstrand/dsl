@@ -1,7 +1,6 @@
 package main
 
 import (
-	"dsl/functions"
 	"dsl/parser"
 	"dsl/runtime"
 	"dsl/scanner"
@@ -77,19 +76,21 @@ func main() {
 }
 
 func generateGlobalFunctions(rt *runtime.Runtime, storage *storage.Storage) {
-	def := functions.FunctionDefinition{
-		ArgumentList: []functions.Argument{
+	def := variables.FunctionDefinition{
+		ArgumentList: []variables.Argument{
 			{Type: variables.INT, Identifier: "i"},
 		},
 		ReturnType: variables.NONE,
 	}
 
-	storage.NewFunctionScope(def)
 	storage.NewFunction("echo", def)
-	storage.NewLabel("echo")
 
+	A, err := storage.GetVarAddr("i")
+	if err != nil {
+		log.Fatal(err)
+	}
 	storage.LoadInstruction(&runtime.InstructionEcho{
-		A: storage.GetVarAddr("i"),
+		A: A,
 	})
 	storage.LoadInstruction(&runtime.InstrExitFunction{})
 	storage.DestroyFunctionScope(rt)

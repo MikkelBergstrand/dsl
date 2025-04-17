@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"dsl/functions"
 	"dsl/runtime"
 	"dsl/variables"
 	"fmt"
@@ -19,14 +18,12 @@ type Storage struct {
 type scoped_storage struct {
 	Parent       *scoped_storage
 	Variables    map[string]variables.SymbolTableEntry
-	Functions    map[string]*functions.FunctionDefinition
 	Offset       int
-	Instructions []runtime.InstructionLabelPair //Instructions from statements/expressions in the local scope.
+	Instructions []runtime.InstructionLabelPair //Instructions and associated label from statements/expressions in the local scope.
 }
 
 func newScopedStorage() scoped_storage {
 	return scoped_storage{
-		Functions: make(map[string]*functions.FunctionDefinition),
 		Variables: make(map[string]variables.SymbolTableEntry),
 	}
 }
@@ -38,12 +35,21 @@ func NewStorage() Storage {
 	return storage
 }
 
-func (s *Storage) NewFunction(name string, definition functions.FunctionDefinition) {
+func (s *Storage) NewFunction(name string, definition variables.FunctionDefinition) {
+	s.newFunctionScope(definition)
+
 	// Make the function visible in the function's parent scope
-	s.CurrentScope.Parent.Functions[name] = &definition
+	s.CurrentScope.Parent.Offset += 1
+	s.CurrentScope.Parent.Variables[name] = variables.SymbolTableEntry{
+		FunctionDefinition: definition,
+		Offset:             s.CurrentScope.Parent.Offset,
+		Type:               variables.FUNC_PTR,
+	}
+	fmt.Println("Declared new function ", name, definition)
+	s.NewLabel(name)
 }
 
-func (s *Storage) NewFunctionScope(definition functions.FunctionDefinition) {
+func (s *Storage) newFunctionScope(definition variables.FunctionDefinition) {
 	s.NewScope()
 
 	// Create variable entries for the arguments. They are placed first in the function's symbol table
@@ -97,32 +103,7 @@ func (s *Storage) NewVariable(vartype variables.Type, name string) (*variables.S
 	return &variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1, Type: vartype}, nil
 }
 
-func (s *Storage) GetFunction(name string) functions.FunctionDefinition {
-	scope := s.CurrentScope
-	def, ok := functions.FunctionDefinition{}, false
-	scopeOffset := 0
-	for {
-		var func_ptr *functions.FunctionDefinition
-		func_ptr, ok = scope.Functions[name]
-
-		if ok {
-			def = *func_ptr
-			break
-		}
-		scope = (*scope).Parent
-		if scope == nil {
-			break
-		}
-		scopeOffset += 1
-	}
-
-	if !ok {
-		log.Fatalf("Could not resolve function name: %s", name)
-	}
-	return def
-}
-
-func (s *Storage) GetVarAddr(name string) variables.Symbol {
+func (s *Storage) GetVarAddr(name string) (variables.Symbol, error) {
 	scope := s.CurrentScope
 	symbol, ok := variables.SymbolTableEntry{}, false
 	scopeOffset := 0
@@ -139,13 +120,14 @@ func (s *Storage) GetVarAddr(name string) variables.Symbol {
 	}
 
 	if !ok {
-		log.Fatalf("Could not resolve variable name: %s", name)
+		return variables.Symbol{}, fmt.Errorf("could not resolve variable name: %s", name)
 	}
 	return variables.Symbol{
-		Scope:  scopeOffset,
-		Offset: symbol.Offset,
-		Type:   symbol.Type,
-	}
+		Scope:              scopeOffset,
+		Offset:             symbol.Offset,
+		Type:               symbol.Type,
+		FunctionDefinition: symbol.FunctionDefinition,
+	}, nil
 }
 
 func (s *Storage) LoadLabeledInstruction(instruction runtime.Instruction, label string) *runtime.InstructionLabelPair {

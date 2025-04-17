@@ -18,5 +18,4 @@ func Println(color string, str ...any) {
 	fmt.Print(color)
 	fmt.Println(str...)
 	fmt.Print(Reset)
-
 }

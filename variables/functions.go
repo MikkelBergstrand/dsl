@@ -1,25 +1,21 @@
-package functions
-
-import "dsl/variables"
+package variables
 
 type Argument struct {
 	Identifier string
-	Type       variables.Type
+	Type       Type
 }
 
 type FunctionDefinition struct {
-	ArgumentList       []Argument
-	ReturnType         variables.Type
+	ArgumentList []Argument
+	ReturnType   Type
 }
 
-type FullFunctionDefinition struct {
-	Name               string
-	FunctionDefinition FunctionDefinition
-}
+// Holds the label of the function it is referring to.
+type FunctionPointer string
 
 // Verify an argument list of symbols.
 // If the argument list length and type of each argument does not match, return false.
-func (fn FunctionDefinition) ValidateArgumentList(symbols []variables.Symbol) bool {
+func (fn FunctionDefinition) ValidateArgumentList(symbols []Symbol) bool {
 	if len(symbols) != len(fn.ArgumentList) {
 		return false
 	}

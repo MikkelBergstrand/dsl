@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"dsl/functions"
 	"dsl/runtime"
 	"dsl/storage"
 	"dsl/variables"
@@ -123,7 +122,11 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		})
 		return addr
 	case 11:
-		return storage.GetVarAddr(words[0].(string))
+		sym, err := storage.GetVarAddr(words[0].(string))
+		if err != nil {
+			log.Fatal(err)
+		}
+		return sym
 	case 12: // New integer, eg. int a = 3
 		addr, err := storage.NewVariable(variables.INT, words[1].(string))
 		if err != nil {
@@ -140,7 +143,10 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		})
 		return *addr
 	case 13: // Reassignment of integer, e.g. a = 3
-		addr := storage.GetVarAddr(words[0].(string))
+		addr, err := storage.GetVarAddr(words[0].(string))
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		storage.LoadInstruction(&runtime.InstrAssign{
 			Source: words[2].(variables.Symbol),
@@ -155,10 +161,19 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		storage.DestroyScope()
 	case 19: // call function e.g. echo ( 0 )
 		arg_list := (words[2].(List[variables.Symbol])).Iterate()
-		fn := storage.GetFunction(words[0].(string))
 
-		if !fn.ValidateArgumentList(arg_list) {
-			log.Fatalf("Argument list to function %s invalid\n", words[0].(string))
+		func_name := words[0].(string)
+		sym, err := storage.GetVarAddr(func_name)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if sym.Type != variables.FUNC_PTR {
+			log.Fatalf("attempting to call %s, a non-function variable", func_name)
+		}
+		fmt.Println(sym, arg_list)
+
+		if !sym.FunctionDefinition.ValidateArgumentList(arg_list) {
+			log.Fatalf("Argument list to function %s invalid\n", func_name)
 		}
 
 		// Bit hacky, but from the perspective of the new function,
@@ -170,13 +185,13 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			passed_arg_list[i].Scope += 1
 		}
 
-		ret_val := storage.NewLiteral(fn.ReturnType)
+		ret_val := storage.NewLiteral(sym.FunctionDefinition.ReturnType)
 		storage.LoadInstruction(&runtime.InstrCallFunction{
-			PreludeLength: len(fn.ArgumentList) + 2,
+			PreludeLength: len(sym.FunctionDefinition.ArgumentList) + 2,
 			RetVal:        ret_val,
 		})
 
-		for i := range fn.ArgumentList {
+		for i := range sym.FunctionDefinition.ArgumentList {
 			storage.LoadInstruction(&runtime.InstrAssign{
 				Source: passed_arg_list[i],
 				Dest:   variables.Symbol{Scope: 0, Offset: i}, // For simplicity, parameter #i is always stored in the scope with offset i
@@ -248,40 +263,31 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			Dest:   *addr,
 		})
 		return *addr
-	case 40:
-
-		sym := storage.NewLiteral(variables.FUNC_PTR)
-		storage.LoadInstruction(&runtime.InstrLoadImmediate{
-			Dest:  sym,
-			Value: words[0].(string),
-		})
-		return sym
+	case 40: // declare function. func FunctionHeader FunctionBody
 	case 41: // Declare new function, format "name ( arglist ) returntype"
-		arg_list := words[2].(List[functions.Argument]).Iterate()
+		arg_list := words[2].(List[variables.Argument]).Iterate()
 		ret_type, err := variables.TypeFromString(words[4].(string))
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		def := functions.FunctionDefinition{
+		def := variables.FunctionDefinition{
 			ArgumentList: arg_list,
 			ReturnType:   ret_type,
 		}
 
-		storage.NewFunctionScope(def)
 		storage.NewFunction(words[0].(string), def)
-		storage.NewLabel(words[0].(string))
 
-		return words[0].(string)
+		return def
 	case 42: //Function argument declaration list, second+ element
-		second := words[2].(List[functions.Argument])
-		return List[functions.Argument]{
-			First:  words[0].(functions.Argument),
+		second := words[2].(List[variables.Argument])
+		return List[variables.Argument]{
+			First:  words[0].(variables.Argument),
 			Second: &second,
 		}
 	case 43: //Function argument declaration list, first element
-		return List[functions.Argument]{
-			First:  words[0].(functions.Argument),
+		return List[variables.Argument]{
+			First:  words[0].(variables.Argument),
 			Second: nil,
 		}
 	case 44: //Function argument declaration
@@ -290,7 +296,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			log.Fatalln(err.Error())
 		}
 
-		return functions.Argument{
+		return variables.Argument{
 			Type:       _type,
 			Identifier: words[1].(string),
 		}
