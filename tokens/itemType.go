@@ -87,6 +87,7 @@ const (
 	NTWithElse
 	NTEndConditionalScope
 	NTBeginElseIf
+	NTTypeList
 	NONTERMINALS_LENGTH
 )
 

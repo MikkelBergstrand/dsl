@@ -35,26 +35,36 @@ func NewStorage() Storage {
 	return storage
 }
 
-func (s *Storage) NewFunction(name string, definition variables.FunctionDefinition) {
+func (s *Storage) NewFunction(name string, definition variables.TypeDefinition) {
+	func_symbol, err := s.NewVariable(definition, name)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	label := s.NewAutoLabel()
+
+	s.LoadInstruction(&runtime.InstrLoadImmediate{
+		Dest:  *func_symbol,
+		Value: variables.FunctionPointer(label),
+	})
+
 	s.newFunctionScope(definition)
 
 	// Make the function visible in the function's parent scope
-	s.CurrentScope.Parent.Offset += 1
-	s.CurrentScope.Parent.Variables[name] = variables.SymbolTableEntry{
-		FunctionDefinition: definition,
-		Offset:             s.CurrentScope.Parent.Offset,
-		Type:               variables.FUNC_PTR,
-	}
-	fmt.Println("Declared new function ", name, definition)
-	s.NewLabel(name)
+	fmt.Println("Declared new function ", name, definition, "with label", label)
+
+	s.NewLabel(label)
 }
 
-func (s *Storage) newFunctionScope(definition variables.FunctionDefinition) {
+func (s *Storage) newFunctionScope(definition variables.TypeDefinition) {
 	s.NewScope()
 
 	// Create variable entries for the arguments. They are placed first in the function's symbol table
 	for _, arg := range definition.ArgumentList {
-		s.NewVariable(arg.Type, arg.Identifier)
+		_, err := s.NewVariable(arg.Definition, arg.Identifier)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
@@ -81,12 +91,14 @@ func (s *Storage) DestroyScope() {
 
 }
 
-func (s *Storage) NewLiteral(vartype variables.Type) variables.Symbol {
+func (s *Storage) NewLiteral(vartype variables.TypeDefinition) variables.Symbol {
 	s.CurrentScope.Offset += 1
-	return variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1, Type: vartype}
+	sym := variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1, Type: vartype}
+	fmt.Println("New literal", sym)
+	return sym
 }
 
-func (s *Storage) NewVariable(vartype variables.Type, name string) (*variables.Symbol, error) {
+func (s *Storage) NewVariable(vartype variables.TypeDefinition, name string) (*variables.Symbol, error) {
 	_, exists := s.CurrentScope.Variables[name]
 	if exists {
 		log.Fatalf("Redeclaration of variable: %s\n", name)
@@ -99,6 +111,8 @@ func (s *Storage) NewVariable(vartype variables.Type, name string) (*variables.S
 		Offset: addr,
 	}
 	s.CurrentScope.Offset += 1
+
+	fmt.Println("New variable", s.CurrentScope.Variables[name], name)
 
 	return &variables.Symbol{Scope: 0, Offset: s.CurrentScope.Offset - 1, Type: vartype}, nil
 }
@@ -123,10 +137,9 @@ func (s *Storage) GetVarAddr(name string) (variables.Symbol, error) {
 		return variables.Symbol{}, fmt.Errorf("could not resolve variable name: %s", name)
 	}
 	return variables.Symbol{
-		Scope:              scopeOffset,
-		Offset:             symbol.Offset,
-		Type:               symbol.Type,
-		FunctionDefinition: symbol.FunctionDefinition,
+		Scope:  scopeOffset,
+		Offset: symbol.Offset,
+		Type:   symbol.Type,
 	}, nil
 }
 

@@ -9,7 +9,7 @@ type Type int
 
 const (
 	INVALID Type = iota
-	INT Type = iota
+	INT     Type = iota
 	BOOL
 	FUNC_PTR
 	NONE
@@ -39,23 +39,21 @@ func (t Type) String() string {
 	case NONE:
 		return "void"
 	case FUNC_PTR:
-		return "func"
+		return "func_ptr"
 	case INVALID:
-		return "invalid"
+		return ""
 	}
 	log.Panicln("Invalid variable type!")
 	return ""
 }
 
 type Symbol struct {
-	Scope              int
-	Offset             int
-	Type               Type
-	FunctionDefinition FunctionDefinition //optional, if type == FUNC_PTR
+	Scope  int
+	Offset int
+	Type   TypeDefinition
 }
 
 type SymbolTableEntry struct {
-	Offset             int
-	Type               Type
-	FunctionDefinition FunctionDefinition //optional information, if the value is a function pointer.
+	Offset int
+	Type   TypeDefinition
 }

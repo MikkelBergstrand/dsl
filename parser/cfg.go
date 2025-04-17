@@ -214,6 +214,12 @@ func CreateCFG() CFG {
 	cfg.addRule(tokens.NTBeginElseIf, cfg_alternative{tokens.ItemElse})                                                                                //59
 	cfg.addRule(tokens.NTTerm, cfg_alternative{tokens.NTTerm, tokens.ItemOpMod, tokens.NTFactor})                                                      // 60
 	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.ItemReturn, tokens.NTExpr, tokens.ItemSemicolon})                                           // 61
+	//62
+	cfg.addRule(tokens.NTVarType, cfg_alternative{tokens.ItemFunction, tokens.ItemParOpen, tokens.NTTypeList, tokens.ItemParClosed, tokens.NTVarType})
+	//63
+	cfg.addRule(tokens.NTTypeList, cfg_alternative{tokens.NTVarType, tokens.ItemComma, tokens.NTTypeList})
+	//64
+	cfg.addRule(tokens.NTTypeList, cfg_alternative{tokens.NTVarType})
 	fmt.Println("Num rules: ", len(cfg._array))
 	cfg.compile()
 

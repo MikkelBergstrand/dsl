@@ -132,6 +132,15 @@ func (instr *InstrJmp) Execute(runtime *Runtime) {
 	runtime.Programcounter = runtime.GetLabel(instr.Label) - 1 // decrement, since it is autoincremented
 }
 
+type InstrJmpVar struct {
+	LabelSymbol variables.Symbol
+}
+
+func (instr *InstrJmpVar) Execute(runtime *Runtime) {
+	val := runtime.Get(instr.LabelSymbol).(variables.FunctionPointer)
+	runtime.Programcounter = runtime.GetLabel(string(val)) - 1
+}
+
 type InstrJmpIf struct {
 	Label     string
 	Condition variables.Symbol

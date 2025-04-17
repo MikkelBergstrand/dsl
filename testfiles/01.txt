@@ -1,13 +1,23 @@
 
-func doSomething(int a) int {
-  if a == 0 {
-    return 5;
-  } else if a == 1 {
-    return 6;
-  } else {
-    return 7;
-  }
+func square(int i) int {
+  return i*i;
 }
 
-int a = doSomething(0);
-echo(a);
+func exact(int i) int {
+  return i;
+}
+
+func multiplier(int a, int b, func (int) int number) int {
+  return number(0)*number(0);
+}
+
+func divider(int a, int b, func (int) int number) int {
+  return number(a)/number(b);
+}
+
+func doSomething(func (int, int, func(int) int) int subFunc) int {
+  return subFunc(9, 3, square);
+}
+
+int c = doSomething(divider);
+echo(c);

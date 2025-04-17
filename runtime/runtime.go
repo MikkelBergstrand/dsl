@@ -46,7 +46,8 @@ func (runtime *Runtime) GetLabel(label string) int {
 }
 
 func (runtime *Runtime) PushAddress() {
-	runtime.AddressStack.Push(runtime.StackTop)
+	runtime.AddressStack.Push(runtime.StackTop+1)
+	fmt.Println("Adress stack pushed at ", runtime.StackTop+1)
 }
 
 func (runtime *Runtime) PopAddress() {
@@ -102,9 +103,10 @@ func (r *Runtime) AddressFromSymbol(symbol variables.Symbol) int {
 }
 
 func (s *Runtime) Get(symbol variables.Symbol) any {
-	resolve := s.Variables[s.AddressFromSymbol(symbol)]
+	addr := s.AddressFromSymbol(symbol)
+	resolve := s.Variables[addr]
 
-	fmt.Println("Get", symbol, resolve)
+	fmt.Println("Get", symbol, "val=", resolve, "addr=", addr)
 	return resolve
 }
 
@@ -124,5 +126,5 @@ func (s *Runtime) Set(symbol variables.Symbol, value any) {
 	if addr > s.StackTop {
 		s.StackTop = addr
 	}
-	fmt.Println("Set", symbol, value, addr)
+	fmt.Println("Set", symbol, "value=", value, "addr=", addr)
 }

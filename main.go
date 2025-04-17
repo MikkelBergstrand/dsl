@@ -76,11 +76,17 @@ func main() {
 }
 
 func generateGlobalFunctions(rt *runtime.Runtime, storage *storage.Storage) {
-	def := variables.FunctionDefinition{
+	def := variables.TypeDefinition{
+		BaseType: variables.FUNC_PTR,
 		ArgumentList: []variables.Argument{
-			{Type: variables.INT, Identifier: "i"},
+			{
+				Definition: variables.TypeDefinition{
+					BaseType: variables.INT,
+				},
+				Identifier: "i",
+			},
 		},
-		ReturnType: variables.NONE,
+		ReturnType: &variables.TypeDefinition{BaseType: variables.NONE},
 	}
 
 	storage.NewFunction("echo", def)
