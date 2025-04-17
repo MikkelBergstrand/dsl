@@ -17,17 +17,17 @@ type Storage struct {
 }
 
 type scoped_storage struct {
-	Parent            *scoped_storage
-	VariableAddresses map[string]variables.SymbolTableEntry
-	Functions         map[string]*functions.FunctionDefinition
-	Offset            int
-	Instructions      []runtime.InstructionLabelPair //Instructions from statements/expressions in the local scope.
+	Parent       *scoped_storage
+	Variables    map[string]variables.SymbolTableEntry
+	Functions    map[string]*functions.FunctionDefinition
+	Offset       int
+	Instructions []runtime.InstructionLabelPair //Instructions from statements/expressions in the local scope.
 }
 
 func newScopedStorage() scoped_storage {
 	return scoped_storage{
-		Functions:         make(map[string]*functions.FunctionDefinition),
-		VariableAddresses: make(map[string]variables.SymbolTableEntry),
+		Functions: make(map[string]*functions.FunctionDefinition),
+		Variables: make(map[string]variables.SymbolTableEntry),
 	}
 }
 
@@ -81,14 +81,14 @@ func (s *Storage) NewLiteral(vartype variables.Type) variables.Symbol {
 }
 
 func (s *Storage) NewVariable(vartype variables.Type, name string) (*variables.Symbol, error) {
-	_, exists := s.CurrentScope.VariableAddresses[name]
+	_, exists := s.CurrentScope.Variables[name]
 	if exists {
 		log.Fatalf("Redeclaration of variable: %s\n", name)
 		return nil, fmt.Errorf("redeclaration of variable: %s\n", name)
 	}
 
 	addr := s.CurrentScope.Offset
-	s.CurrentScope.VariableAddresses[name] = variables.SymbolTableEntry{
+	s.CurrentScope.Variables[name] = variables.SymbolTableEntry{
 		Type:   vartype,
 		Offset: addr,
 	}
@@ -127,7 +127,7 @@ func (s *Storage) GetVarAddr(name string) variables.Symbol {
 	symbol, ok := variables.SymbolTableEntry{}, false
 	scopeOffset := 0
 	for {
-		symbol, ok = (*scope).VariableAddresses[name]
+		symbol, ok = (*scope).Variables[name]
 		if ok {
 			break
 		}

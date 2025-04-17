@@ -248,6 +248,14 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			Dest:   *addr,
 		})
 		return *addr
+	case 40:
+
+		sym := storage.NewLiteral(variables.FUNC_PTR)
+		storage.LoadInstruction(&runtime.InstrLoadImmediate{
+			Dest:  sym,
+			Value: words[0].(string),
+		})
+		return sym
 	case 41: // Declare new function, format "name ( arglist ) returntype"
 		arg_list := words[2].(List[functions.Argument]).Iterate()
 		ret_type, err := variables.TypeFromString(words[4].(string))

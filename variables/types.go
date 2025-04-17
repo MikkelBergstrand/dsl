@@ -10,11 +10,14 @@ type Type int
 const (
 	INT Type = iota
 	BOOL
+	FUNC_PTR
 	NONE
 )
 
 func TypeFromString(s string) (Type, error) {
 	switch s {
+	case "fptr":
+		return FUNC_PTR, nil
 	case "int":
 		return INT, nil
 	case "bool":
@@ -23,7 +26,7 @@ func TypeFromString(s string) (Type, error) {
 		return NONE, nil
 	}
 
-	return NONE, fmt.Errorf("could not resolve %s to a variable type!", s)
+	return NONE, fmt.Errorf("could not resolve %s to a variable type", s)
 }
 
 func (t Type) String() string {
