@@ -127,18 +127,20 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			log.Fatal(err)
 		}
 		return sym
-	case 12: // New integer, eg. int a = 3
-		addr, err := storage.NewVariable(variables.TypeDefinition{BaseType: variables.INT}, words[1].(string))
+	case 12: // New variable, eg. int a = 3
+		_type := words[0].(variables.TypeDefinition)
+		src := words[3].(variables.Symbol)
+		addr, err := storage.NewVariable(_type, words[1].(string))
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		if words[3].(variables.Symbol).Type.BaseType != variables.INT {
-			log.Fatalf("Invalid type assignment: expected int, got %s", words[3].(variables.Symbol).Type.String())
+		if !src.Type.Equals(_type) {
+			log.Fatalf("invalid type assignment: expected %s, got %s", _type.String(), src.Type.String())
 		}
 
 		storage.LoadInstruction(&runtime.InstrAssign{
-			Source: words[3].(variables.Symbol),
+			Source: src,
 			Dest:   *addr,
 		})
 		return *addr
@@ -235,23 +237,8 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			Value: true,
 		})
 		return addr
-	case 39: // Declaration boolean
-		addr, err := storage.NewVariable(variables.TypeDefinition{BaseType: variables.BOOL}, words[1].(string))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		if variables.BOOL != words[3].(variables.Symbol).Type.BaseType {
-			log.Fatalf("type mismatch in assignment of variable '%s'\n", words[1].(string))
-		}
-
-		storage.LoadInstruction(&runtime.InstrAssign{
-			Source: words[3].(variables.Symbol),
-			Dest:   *addr,
-		})
-		return *addr
-	case 40: // declare function. func FunctionHeader FunctionBody
-	case 41: // Declare new function, format "name ( arglist ) returntype"
+	case 39: // declare function. func FunctionHeader FunctionBody
+	case 40: // Declare new function, format "name ( arglist ) returntype"
 		arg_list := words[2].(List[variables.Argument]).Iterate()
 		ret_type := words[4].(variables.TypeDefinition)
 
@@ -264,46 +251,46 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		storage.NewFunction(words[0].(string), def)
 
 		return def
-	case 42: //Function argument declaration list, second+ element
+	case 41: //Function argument declaration list, second+ element
 		second := words[2].(List[variables.Argument])
 		return List[variables.Argument]{
 			First:  words[0].(variables.Argument),
 			Second: &second,
 		}
-	case 43: //Function argument declaration list, first element
+	case 42: //Function argument declaration list, first element
 		return List[variables.Argument]{
 			First:  words[0].(variables.Argument),
 			Second: nil,
 		}
-	case 44: //Function argument declaration
+	case 43: //Function argument declaration
 		return variables.Argument{
 			Definition: words[0].(variables.TypeDefinition),
 			Identifier: words[1].(string),
 		}
-	case 45: //boolean type
+	case 44: //boolean type
 		return variables.TypeDefinition{BaseType: variables.BOOL}
-	case 46: //int type
+	case 45: //int type
 		return variables.TypeDefinition{BaseType: variables.INT}
-	case 47: // Function scope close
+	case 46: // Function scope close
 		storage.LoadInstruction(&runtime.InstrExitFunction{})
 		storage.DestroyFunctionScope(r)
-	case 49: // If statement, NTIfHeader NTLabelledScopeBegin, NTStatementList, NTLabelledScopeClose
+	case 48: // If statement, NTIfHeader NTLabelledScopeBegin, NTStatementList, NTLabelledScopeClose
 		jmpIfInstr := words[0].(*runtime.InstrJmpIf)
 		instrEnd := words[3].(*runtime.InstructionLabelPair)
 		jmpIfInstr.Label = instrEnd.Label
-	case 50: //NTLabelledScopeBegin
+	case 49: //NTLabelledScopeBegin
 		instr := storage.LoadLabeledInstruction(&runtime.InstrBeginScope{}, storage.NewAutoLabel())
 		storage.NewScope()
 		return instr
-	case 51: //NTLabelledScopeClose
+	case 50: //NTLabelledScopeClose
 		storage.LoadInstruction(&runtime.InstrEndScope{})
 		storage.DestroyScope()
 
 		return storage.LoadLabeledInstruction(&runtime.InstrNOP{}, storage.NewAutoLabel())
 
-	case 52: //Open Function
+	case 51: //Open Function
 		storage.LoadInstruction(&runtime.InstrNOP{})
-	case 53: //NTIfHeader (if Expr)
+	case 52: //NTIfHeader (if Expr)
 		condition := words[1].(variables.Symbol)
 		if condition.Type.BaseType != variables.BOOL {
 			log.Fatalln("Expected boolean statement in if clause, got", condition.Type)
@@ -315,7 +302,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		})
 		jmp_instr := instr.Instruction.(*runtime.InstrJmpIf)
 		return jmp_instr
-	case 54: //If statement + WithElse
+	case 53: //If statement + WithElse
 		jmpIfInstr := words[0].(*runtime.InstrJmpIf)
 		jmpInstr := words[3].(*runtime.InstructionLabelPair)
 		tree := words[4].(List[condition_tree_entry])
@@ -335,7 +322,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			// Make so all Jumps (which ends each condition block) jump to the end of the conditional
 			tree_list[i].end.Instruction.(*runtime.InstrJmp).Label = tree_list[len(tree_list)-1].end.Label
 		}
-	case 55: //WithElse, else if statement, with continuation
+	case 54: //WithElse, else if statement, with continuation
 		jmp := words[1].(*runtime.InstrJmpIf)
 		end := words[4].(*runtime.InstructionLabelPair)
 		list := words[5].(List[condition_tree_entry])
@@ -348,7 +335,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			},
 			Second: &list,
 		}
-	case 56: //WithElse, else if statement, no continuation
+	case 55: //WithElse, else if statement, no continuation
 		jmp_if := words[1].(*runtime.InstrJmpIf)
 		end := words[4].(*runtime.InstructionLabelPair)
 
@@ -361,7 +348,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			Second: nil,
 		}
 
-	case 57: //WithElse, else condition
+	case 56: //WithElse, else condition
 		// Set label to first instruction, as this is not labelled (else condition has no JmpIf clause)
 		start := words[1].(*runtime.InstructionLabelPair)
 		end := words[3].(*runtime.InstructionLabelPair)
@@ -375,14 +362,14 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			},
 			Second: nil,
 		}
-	case 58: // End conditional statement that is part of a larger conditional statement
+	case 57: // End conditional statement that is part of a larger conditional statement
 		// At end of conditional block, we must jump to skip over the other conditionals
 		return storage.LoadInstruction(&runtime.InstrJmp{})
-	case 59: // NTBeginElseIf, used to label the first instruction in the else-if construct.
+	case 58: // NTBeginElseIf, used to label the first instruction in the else-if construct.
 		label := storage.NewAutoLabel()
 		storage.NewLabel(label)
 		return label
-	case 60: // arithmetic: modulo
+	case 59: // arithmetic: modulo
 		new_addr := storage.NewLiteral(variables.TypeDefinition{BaseType: variables.INT})
 		storage.LoadInstruction(&runtime.InstrArithmetic{
 			A:        words[0].(variables.Symbol),
@@ -391,11 +378,11 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			Operator: runtime.MOD,
 		})
 		return new_addr
-	case 61: // return Expr
+	case 60: // return Expr
 		storage.LoadInstruction(&runtime.InstrExitFunction{
 			RetVal: words[1].(variables.Symbol),
 		})
-	case 62: //NTVarType -> function (type_list) return_type
+	case 61: //NTVarType -> function (type_list) return_type
 		return_type := words[4].(variables.TypeDefinition)
 		type_list := words[2].(List[variables.TypeDefinition]).Iterate()
 
@@ -413,13 +400,13 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			ArgumentList: arg_list,
 			ReturnType:   &return_type,
 		}
-	case 63: //Type list - part of list
+	case 62: //Type list - part of list
 		list := words[2].(List[variables.TypeDefinition])
 		return List[variables.TypeDefinition]{
 			First:  words[0].(variables.TypeDefinition),
 			Second: &list,
 		}
-	case 64: //Type list - final type
+	case 63: //Type list - final type
 		return List[variables.TypeDefinition]{
 			First:  words[0].(variables.TypeDefinition),
 			Second: nil,

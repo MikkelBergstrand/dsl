@@ -113,7 +113,7 @@ func CreateCFG() CFG {
 	})
 
 	cfg.addRules(tokens.NTStatement, []cfg_alternative{
-		{tokens.ItemKeyInt, tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTNExpr, tokens.ItemSemicolon},
+		{tokens.NTVarType, tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTNExpr, tokens.ItemSemicolon},
 		{tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTExpr, tokens.ItemSemicolon},
 		{tokens.NTExpr, tokens.ItemSemicolon},
 	})
@@ -161,64 +161,61 @@ func CreateCFG() CFG {
 		{tokens.ItemTrue},
 	})
 
-	cfg.addRule(tokens.NTStatement,
-		cfg_alternative{tokens.ItemKeyBool, tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTExpr, tokens.ItemSemicolon})
-
 	// Note that we dont use NTScopeOpen here, because other parts of the function need to create the scope for us
 	// Closing is done using a special non-terminal, however.
 	cfg.addRule(tokens.NTStatement,
-		cfg_alternative{tokens.ItemFunction, tokens.NTFunctionDefinition, tokens.NTFunctionBody}) //40
+		cfg_alternative{tokens.ItemFunction, tokens.NTFunctionDefinition, tokens.NTFunctionBody}) //39
 
 	cfg.addRule(tokens.NTFunctionDefinition,
-		cfg_alternative{tokens.ItemIdentifier, tokens.ItemParOpen, tokens.NTArgumentDeclarationList, tokens.ItemParClosed, tokens.NTVarType}) //41
+		cfg_alternative{tokens.ItemIdentifier, tokens.ItemParOpen, tokens.NTArgumentDeclarationList, tokens.ItemParClosed, tokens.NTVarType}) //40
 
 	cfg.addRules(tokens.NTArgumentDeclarationList, []cfg_alternative{
-		{tokens.NTArgumentDeclaration, tokens.ItemComma, tokens.NTArgumentDeclarationList}, //42
-		{tokens.NTArgumentDeclaration}, //43
+		{tokens.NTArgumentDeclaration, tokens.ItemComma, tokens.NTArgumentDeclarationList}, //41
+		{tokens.NTArgumentDeclaration}, //42
 	})
 
 	cfg.addRules(tokens.NTArgumentDeclaration, []cfg_alternative{
-		{tokens.NTVarType, tokens.ItemIdentifier}, //44
+		{tokens.NTVarType, tokens.ItemIdentifier}, //43
 	})
 
 	cfg.addRules(tokens.NTVarType, []cfg_alternative{
-		{tokens.ItemKeyBool}, //45
-		{tokens.ItemKeyInt},  //46
+		{tokens.ItemKeyBool}, //44
+		{tokens.ItemKeyInt},  //45
 	})
 
-	cfg.addRule(tokens.NTFunctionClose, cfg_alternative{tokens.ItemScopeClose}) // 47
+	cfg.addRule(tokens.NTFunctionClose, cfg_alternative{tokens.ItemScopeClose}) // 46
 
-	cfg.addRule(tokens.NTFunctionBody, cfg_alternative{tokens.NTFunctionOpen, tokens.NTStatementList, tokens.NTFunctionClose}) // 48
+	cfg.addRule(tokens.NTFunctionBody, cfg_alternative{tokens.NTFunctionOpen, tokens.NTStatementList, tokens.NTFunctionClose}) // 47
 
-	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.NTIfHeader, // 49
+	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.NTIfHeader, // 48
 		tokens.NTScopeBegin,
 		tokens.NTStatementList,
 		tokens.NTLabelledScopeClose,
 	})
 
-	cfg.addRule(tokens.NTLabelledScopeBegin, cfg_alternative{tokens.ItemScopeOpen})  // 50
-	cfg.addRule(tokens.NTLabelledScopeClose, cfg_alternative{tokens.ItemScopeClose}) // 51
-	cfg.addRule(tokens.NTFunctionOpen, cfg_alternative{tokens.ItemScopeOpen})        // 52
+	cfg.addRule(tokens.NTLabelledScopeBegin, cfg_alternative{tokens.ItemScopeOpen})  // 49
+	cfg.addRule(tokens.NTLabelledScopeClose, cfg_alternative{tokens.ItemScopeClose}) // 50
+	cfg.addRule(tokens.NTFunctionOpen, cfg_alternative{tokens.ItemScopeOpen})        // 51
 
-	cfg.addRule(tokens.NTIfHeader, cfg_alternative{tokens.ItemIf, tokens.NTExpr}) // 53
+	cfg.addRule(tokens.NTIfHeader, cfg_alternative{tokens.ItemIf, tokens.NTExpr}) // 52
 
 	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.NTIfHeader, tokens.NTScopeBegin, tokens.NTStatementList, tokens.NTEndConditionalScope,
-		tokens.NTWithElse}) // 54
+		tokens.NTWithElse}) // 53
 
 	cfg.addRule(tokens.NTWithElse, cfg_alternative{tokens.NTBeginElseIf, tokens.NTIfHeader, tokens.NTScopeBegin, tokens.NTStatementList, tokens.NTEndConditionalScope,
-		tokens.NTWithElse}) // 55
+		tokens.NTWithElse}) // 54
 	cfg.addRule(tokens.NTWithElse,
-		cfg_alternative{tokens.NTBeginElseIf, tokens.NTIfHeader, tokens.NTScopeBegin, tokens.NTStatementList, tokens.NTLabelledScopeClose}) // 56
-	cfg.addRule(tokens.NTWithElse, cfg_alternative{tokens.ItemElse, tokens.NTLabelledScopeBegin, tokens.NTStatementList, tokens.NTLabelledScopeClose}) // 57
-	cfg.addRule(tokens.NTEndConditionalScope, cfg_alternative{tokens.NTScopeClose})                                                                    // 58
-	cfg.addRule(tokens.NTBeginElseIf, cfg_alternative{tokens.ItemElse})                                                                                //59
-	cfg.addRule(tokens.NTTerm, cfg_alternative{tokens.NTTerm, tokens.ItemOpMod, tokens.NTFactor})                                                      // 60
-	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.ItemReturn, tokens.NTExpr, tokens.ItemSemicolon})                                           // 61
-	//62
+		cfg_alternative{tokens.NTBeginElseIf, tokens.NTIfHeader, tokens.NTScopeBegin, tokens.NTStatementList, tokens.NTLabelledScopeClose}) // 55
+	cfg.addRule(tokens.NTWithElse, cfg_alternative{tokens.ItemElse, tokens.NTLabelledScopeBegin, tokens.NTStatementList, tokens.NTLabelledScopeClose}) // 56
+	cfg.addRule(tokens.NTEndConditionalScope, cfg_alternative{tokens.NTScopeClose})                                                                    // 57
+	cfg.addRule(tokens.NTBeginElseIf, cfg_alternative{tokens.ItemElse})                                                                                //58
+	cfg.addRule(tokens.NTTerm, cfg_alternative{tokens.NTTerm, tokens.ItemOpMod, tokens.NTFactor})                                                      // 59
+	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.ItemReturn, tokens.NTExpr, tokens.ItemSemicolon})                                           // 60
+	//61
 	cfg.addRule(tokens.NTVarType, cfg_alternative{tokens.ItemFunction, tokens.ItemParOpen, tokens.NTTypeList, tokens.ItemParClosed, tokens.NTVarType})
-	//63
+	//62
 	cfg.addRule(tokens.NTTypeList, cfg_alternative{tokens.NTVarType, tokens.ItemComma, tokens.NTTypeList})
-	//64
+	//63
 	cfg.addRule(tokens.NTTypeList, cfg_alternative{tokens.NTVarType})
 	fmt.Println("Num rules: ", len(cfg._array))
 	cfg.compile()
