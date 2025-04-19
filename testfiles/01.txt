@@ -1,23 +1,14 @@
 
-func square(int i) int {
-  return i*i;
+int mult = 2;
+func factorial(int a) int {
+  func sub(int a, int b) int {
+    return a*b;
+  }
+  
+  if a == 1 {
+    return mult*a;
+  } 
+  return sub(a, factorial(a-1));
 }
 
-func exact(int i) int {
-  return i;
-}
-
-func multiplier(int a, int b, func (int) int number) int {
-  return number(0)*number(0);
-}
-
-func divider(int a, int b, func (int) int number) int {
-  return number(a)/number(b);
-}
-
-func doSomething(func (int, int, func(int) int) int subFunc) int {
-  return subFunc(9, 3, square);
-}
-
-int c = doSomething(divider);
-echo(c);
+echo(factorial(3));

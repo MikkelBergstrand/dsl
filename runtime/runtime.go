@@ -14,16 +14,15 @@ type Runtime struct {
 	Programcounter int
 	Labels         map[string]int
 	CallStack      structure.Stack[ActivationRegister]
-	AddressStack   structure.Stack[int]
 	Variables      []any
-	StackTop       int
-	Addresspointer int
 }
 
 type ActivationRegister struct {
-	SavedPC            int
-	Retval             variables.Symbol
-	AddressStackLength int
+	SavedPC      int
+	Retval       variables.Symbol
+	AddressStack structure.Stack[int]
+	AddressBegin int
+	StackTop     int
 }
 
 func New() Runtime {
@@ -32,8 +31,14 @@ func New() Runtime {
 		Labels:    map[string]int{},
 	}
 
-	runTime.CallStack.Push(ActivationRegister{SavedPC: 0})
-	runTime.AddressStack.Push(0)
+	first_ar := ActivationRegister{
+		SavedPC:      0,
+		AddressBegin: 0,
+	}
+	first_ar.AddressStack.Push(0)
+
+	runTime.CallStack.Push(first_ar)
+
 	return runTime
 }
 
@@ -45,26 +50,38 @@ func (runtime *Runtime) GetLabel(label string) int {
 	return value
 }
 
-func (runtime *Runtime) PushAddress() {
-	runtime.AddressStack.Push(runtime.StackTop+1)
-	fmt.Println("Adress stack pushed at ", runtime.StackTop+1)
+func (ar *ActivationRegister) PushAddress() {
+	ar.AddressStack.Push(ar.StackTop + 1)
+	fmt.Println("Adress stack pushed at ", ar)
 }
 
-func (runtime *Runtime) PopAddress() {
-	runtime.StackTop = runtime.AddressStack.Pop()
+func (ar *ActivationRegister) PopAddress() {
+	ar.StackTop = ar.AddressStack.Pop()
 }
 
-func (runtime *Runtime) PushCall(offset int) {
-	runtime.CallStack.Push(ActivationRegister{SavedPC: runtime.Programcounter + offset, AddressStackLength: len(runtime.AddressStack)})
+func (runtime *Runtime) PushCall(offset int, relativeFunctionSymbol int) {
+	// The address stack in the function must have an address stack equal to how it looked
+	// when the function was defined.
+	top_of_callstack := runtime.CallStack.Peek()
+	var addr_stack structure.Stack[int]
+	for i := range len(top_of_callstack.AddressStack)-relativeFunctionSymbol {
+		addr_stack.Push(top_of_callstack.AddressStack[i])
+	}
+	// The beginning of the next address stack then begins at the next avaiable address
+	addr_stack.Push(top_of_callstack.StackTop + 1)
+	runtime.CallStack.Push(ActivationRegister{
+		SavedPC:      runtime.Programcounter + offset,
+		AddressStack: addr_stack,
+		AddressBegin: top_of_callstack.StackTop + 1,
+	})
+
+	fmt.Println("PushCall with AR = ", runtime.CallStack.Peek(), relativeFunctionSymbol)
 }
 
 func (runtime *Runtime) PopCall() {
 	val := runtime.CallStack.Pop()
 	runtime.Programcounter = val.SavedPC - 1
-
-	for len(runtime.AddressStack) != val.AddressStackLength {
-		runtime.PopAddress()
-	}
+	fmt.Println("PopCall, AR = ", runtime.CallStack.Peek())
 }
 
 // Add the set of instructions. Return the first and last index of the inserted instructions.
@@ -98,7 +115,10 @@ func (runtime *Runtime) Run() {
 }
 
 func (r *Runtime) AddressFromSymbol(symbol variables.Symbol) int {
-	ar := r.AddressStack[len(r.AddressStack)-1-symbol.Scope]
+	top_of_callstack := r.CallStack.PeekRef()
+
+	fmt.Println("Resolving address symbol", symbol, top_of_callstack.AddressStack)
+	ar := top_of_callstack.AddressStack[len(top_of_callstack.AddressStack)-1-symbol.Scope]
 	return ar + symbol.Offset
 }
 
@@ -123,8 +143,9 @@ func (r *Runtime) GetBool(symbol variables.Symbol) bool {
 func (s *Runtime) Set(symbol variables.Symbol, value any) {
 	addr := s.AddressFromSymbol(symbol)
 	s.Variables[addr] = value
-	if addr > s.StackTop {
-		s.StackTop = addr
+	stack_top := &s.CallStack.PeekRef().StackTop
+	if addr > *stack_top {
+		*stack_top = addr
 	}
 	fmt.Println("Set", symbol, "value=", value, "addr=", addr)
 }

@@ -133,12 +133,11 @@ func (instr *InstrJmp) Execute(runtime *Runtime) {
 }
 
 type InstrJmpVar struct {
-	LabelSymbol variables.Symbol
+	FunctionPointer variables.FunctionPointer
 }
 
 func (instr *InstrJmpVar) Execute(runtime *Runtime) {
-	val := runtime.Get(instr.LabelSymbol).(variables.FunctionPointer)
-	runtime.Programcounter = runtime.GetLabel(string(val)) - 1
+	runtime.Programcounter = runtime.GetLabel(string(instr.FunctionPointer)) - 1
 }
 
 type InstrJmpIf struct {
@@ -174,31 +173,50 @@ func (instr *InstructionEcho) Execute(runtime *Runtime) {
 }
 
 type InstrCallFunction struct {
-	PreludeLength int
-	RetVal        variables.Symbol
+	PreludeLength   int
+	Arguments       []variables.Symbol
+	RetVal          variables.Symbol
+	FuncScopeOffset int
+	SymbolicLabel   variables.Symbol
 }
 
 func (instr *InstrCallFunction) Execute(runtime *Runtime) {
+	//Fetch and copy argument values
+	var arg_values []any
+	for i := range instr.Arguments {
+		arg_values = append(arg_values, runtime.Get(instr.Arguments[i]))
+	}
+	//Fetch func_ptr
+	func_ptr := runtime.Get(instr.SymbolicLabel).(variables.FunctionPointer)
+
 	// Bind return value
 	top_ar := runtime.CallStack.PeekRef()
 	top_ar.Retval = instr.RetVal
 	fmt.Println("Bound ret val to", top_ar.Retval)
 
 	// Account for prelude length
-	runtime.PushCall(instr.PreludeLength)
-	runtime.PushAddress()
+	runtime.PushCall(instr.PreludeLength, instr.FuncScopeOffset)
+
+	// Once "inside" the function, load argument values
+	for i := range arg_values {
+		runtime.Set(variables.Symbol{Offset: i, Scope: 0, Type: instr.Arguments[i].Type}, arg_values[i])
+	}
+	jmp_instr := InstrJmpVar{
+		FunctionPointer: func_ptr,
+	}
+	jmp_instr.Execute(runtime)
 }
 
 type InstrBeginScope struct{}
 
 func (instr *InstrBeginScope) Execute(runtime *Runtime) {
-	runtime.PushAddress()
+	runtime.CallStack.PeekRef().PushAddress()
 }
 
 type InstrEndScope struct{}
 
 func (instr *InstrEndScope) Execute(runtime *Runtime) {
-	runtime.PopAddress()
+	runtime.CallStack.PeekRef().PopAddress()
 }
 
 type InstrExitFunction struct {

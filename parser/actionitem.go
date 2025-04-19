@@ -164,9 +164,6 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 
 		func_name := words[0].(string)
 		sym, err := storage.GetVarAddr(func_name)
-		// Increment scope, since the function's scope will have been inserted
-		// by the time it is referenced.
-		sym.Scope += 1
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -181,29 +178,16 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		// Bit hacky, but from the perspective of the new function,
 		// the arguments are located in the above scope. Hence, we must
 		// increment the scope to account for this.
-		passed_arg_list := make([]variables.Symbol, len(arg_list))
-		for i := range passed_arg_list {
-			passed_arg_list[i] = arg_list[i]
-			passed_arg_list[i].Scope += 1
-		}
 
 		ret_val := storage.NewLiteral(*sym.Type.ReturnType)
 		storage.LoadInstruction(&runtime.InstrCallFunction{
-			PreludeLength: len(sym.Type.ArgumentList) + 2,
-			RetVal:        ret_val,
+			PreludeLength:   1,
+			RetVal:          ret_val,
+			FuncScopeOffset: sym.Scope,
+			Arguments:       arg_list,
+			SymbolicLabel:   sym,
 		})
 
-		for i := range sym.Type.ArgumentList {
-			fmt.Println("Processing argument", i, passed_arg_list[i])
-			storage.LoadInstruction(&runtime.InstrAssign{
-				Source: passed_arg_list[i],
-				Dest:   variables.Symbol{Scope: 0, Offset: i}, // For simplicity, parameter #i is always stored in the scope with offset i
-			})
-		}
-
-		storage.LoadInstruction(&runtime.InstrJmpVar{
-			LabelSymbol: sym,
-		})
 		return ret_val
 
 	case 20: //argument list construction, input is "symbol , List"
