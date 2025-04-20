@@ -60,10 +60,10 @@ func main() {
 	storage := storage.NewStorage()
 	runtime := runtime.New()
 
-	generateGlobalFunctions(&runtime, &storage)
+	generateGlobalFunctions(runtime, &storage)
 
 	start = time.Now()
-	err = parser.Parse(words, cfg, grammar, &storage, &runtime)
+	entryPoint, err := parser.Parse(words, cfg, grammar, &storage, runtime)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -71,7 +71,8 @@ func main() {
 	fmt.Println("Parsed in ", time.Since(start))
 
 	start = time.Now()
-	runtime.Run()
+	primary := runtime.NewInstance(entryPoint)
+	primary.Run()
 	fmt.Println("Program finished in", time.Since(start))
 }
 

@@ -21,7 +21,7 @@ type InstructionLabelPair struct {
 	Label       string
 }
 type Instruction interface {
-	Execute(*Runtime)
+	Execute(*RuntimeInstance)
 }
 
 type Operator int
@@ -65,7 +65,7 @@ type InstrAssign struct {
 	Source variables.Symbol
 }
 
-func (instr *InstrArithmetic) Execute(runtime *Runtime) {
+func (instr *InstrArithmetic) Execute(runtime *RuntimeInstance) {
 	switch instr.Operator {
 	case ADD:
 		runtime.Set(instr.Result, runtime.GetInt(instr.A)+runtime.GetInt(instr.B))
@@ -87,7 +87,7 @@ type InstrCompareInt struct {
 	Result   variables.Symbol
 }
 
-func (instr *InstrCompareInt) Execute(runtime *Runtime) {
+func (instr *InstrCompareInt) Execute(runtime *RuntimeInstance) {
 	switch instr.Operator {
 	case EQUALS:
 		runtime.Set(instr.Result, runtime.GetInt(instr.A) == runtime.GetInt(instr.B))
@@ -112,7 +112,7 @@ type InstrCompareBool struct {
 	Result   variables.Symbol
 }
 
-func (instr *InstrCompareBool) Execute(runtime *Runtime) {
+func (instr *InstrCompareBool) Execute(runtime *RuntimeInstance) {
 	switch instr.Operator {
 	case EQUALS:
 		runtime.Set(instr.Result, runtime.GetBool(instr.A) == runtime.GetBool(instr.B))
@@ -129,16 +129,16 @@ type InstrJmp struct {
 	Label string
 }
 
-func (instr *InstrJmp) Execute(runtime *Runtime) {
-	runtime.Programcounter = runtime.GetLabel(instr.Label) - 1 // decrement, since it is autoincremented
+func (instr *InstrJmp) Execute(runtime *RuntimeInstance) {
+	runtime.Programcounter = runtime.Runtime.GetLabel(instr.Label) - 1 // decrement, since it is autoincremented
 }
 
 type InstrJmpVar struct {
 	Label string
 }
 
-func (instr *InstrJmpVar) Execute(runtime *Runtime) {
-	runtime.Programcounter = runtime.GetLabel(instr.Label) - 1
+func (instr *InstrJmpVar) Execute(runtime *RuntimeInstance) {
+	runtime.Programcounter = runtime.Runtime.GetLabel(instr.Label) - 1
 }
 
 type InstrJmpIf struct {
@@ -146,9 +146,9 @@ type InstrJmpIf struct {
 	Condition variables.Symbol
 }
 
-func (instr *InstrJmpIf) Execute(runtime *Runtime) {
+func (instr *InstrJmpIf) Execute(runtime *RuntimeInstance) {
 	if !runtime.GetBool(instr.Condition) {
-		runtime.Programcounter = runtime.GetLabel(instr.Label) - 1
+		runtime.Programcounter = runtime.Runtime.GetLabel(instr.Label) - 1
 	}
 }
 
@@ -157,7 +157,7 @@ type InstrLoadImmediate struct {
 	Value any
 }
 
-func (instr *InstrLoadImmediate) Execute(runtime *Runtime) {
+func (instr *InstrLoadImmediate) Execute(runtime *RuntimeInstance) {
 	runtime.Set(instr.Dest, instr.Value)
 }
 
@@ -166,7 +166,7 @@ type InstrLoadFunction struct {
 	Label  string
 }
 
-func (instr *InstrLoadFunction) Execute(runtime *Runtime) {
+func (instr *InstrLoadFunction) Execute(runtime *RuntimeInstance) {
 	// Copy the current address stack.
 	var address_stack structure.Stack[int]
 	src_address_stack := runtime.CallStack.Peek().AddressStack
@@ -179,7 +179,7 @@ func (instr *InstrLoadFunction) Execute(runtime *Runtime) {
 	})
 }
 
-func (instr *InstrAssign) Execute(runtime *Runtime) {
+func (instr *InstrAssign) Execute(runtime *RuntimeInstance) {
 	runtime.Set(instr.Dest, runtime.Get(instr.Source))
 }
 
@@ -187,18 +187,18 @@ type InstructionEcho struct {
 	A variables.Symbol
 }
 
-func (instr *InstructionEcho) Execute(runtime *Runtime) {
-	color.Println(color.Green, runtime.Variables[runtime.AddressFromSymbol(instr.A)])
+func (instr *InstructionEcho) Execute(runtime *RuntimeInstance) {
+	color.Println(color.Green, runtime.Runtime.Variables[runtime.AddressFromSymbol(instr.A)])
 }
 
 type InstrCallFunction struct {
-	PreludeLength   int
-	Arguments       []variables.Symbol
-	RetVal          variables.Symbol
-	SymbolicLabel   variables.Symbol
+	PreludeLength int
+	Arguments     []variables.Symbol
+	RetVal        variables.Symbol
+	SymbolicLabel variables.Symbol
 }
 
-func (instr *InstrCallFunction) Execute(runtime *Runtime) {
+func (instr *InstrCallFunction) Execute(runtime *RuntimeInstance) {
 	//Fetch and copy argument values
 	var arg_values []any
 	for i := range instr.Arguments {
@@ -229,13 +229,13 @@ func (instr *InstrCallFunction) Execute(runtime *Runtime) {
 
 type InstrBeginScope struct{}
 
-func (instr *InstrBeginScope) Execute(runtime *Runtime) {
+func (instr *InstrBeginScope) Execute(runtime *RuntimeInstance) {
 	runtime.CallStack.PeekRef().PushAddress()
 }
 
 type InstrEndScope struct{}
 
-func (instr *InstrEndScope) Execute(runtime *Runtime) {
+func (instr *InstrEndScope) Execute(runtime *RuntimeInstance) {
 	runtime.CallStack.PeekRef().PopAddress()
 }
 
@@ -243,7 +243,7 @@ type InstrExitFunction struct {
 	RetVal variables.Symbol
 }
 
-func (instr *InstrExitFunction) Execute(runtime *Runtime) {
+func (instr *InstrExitFunction) Execute(runtime *RuntimeInstance) {
 	src_val := runtime.Get(instr.RetVal)
 
 	runtime.PopCall()
@@ -256,4 +256,4 @@ func (instr *InstrExitFunction) Execute(runtime *Runtime) {
 // Does nothing.
 type InstrNOP struct{}
 
-func (instr *InstrNOP) Execute(runtime *Runtime) {}
+func (instr *InstrNOP) Execute(runtime *RuntimeInstance) {}

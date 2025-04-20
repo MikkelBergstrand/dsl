@@ -272,7 +272,7 @@ func CreateLRParser(grammar tokens.Grammar, cfg CFG, first FirstSet) LRParser {
 }
 
 func (parser *LRParser) Parse(words <-chan tokens.Token, cfg CFG, grammar tokens.Grammar,
-	storage *storage.Storage, runtime *runtime.Runtime) error {
+	storage *storage.Storage, runtime *runtime.Runtime) (int, error) {
 	type stack_state struct {
 		symbol tokens.ItemType
 		state  int
@@ -307,7 +307,7 @@ func (parser *LRParser) Parse(words <-chan tokens.Token, cfg CFG, grammar tokens
 			state = stack.Peek()
 			_goto := gotoTable[state.state][grammar.MapToArrayindex(rule.A)]
 			if _goto < 0 {
-				return errors.New("bad goto")
+				return 0, errors.New("bad goto")
 			}
 			stack.Push(stack_state{rule.A, _goto, value})
 		case ACTION_SHIFT:
@@ -316,13 +316,12 @@ func (parser *LRParser) Parse(words <-chan tokens.Token, cfg CFG, grammar tokens
 		case ACTION_ACCEPT:
 			if word.Category == tokens.ItemEOF {
 				start, _ := storage.DestroyFunctionScope(runtime) //Destroy the final (outermost) scope
-				runtime.Programcounter = start                    //Set start of program to start of outermost scope.
-				return nil                                        // success
+				return start, nil                                 // success
 			} else {
-				return errors.New("syntax error")
+				return 0, errors.New("syntax error")
 			}
 		default:
-			return errors.New(fmt.Sprintln("invalid action state on", word))
+			return 0, errors.New(fmt.Sprintln("invalid action state on", word))
 		}
 	}
 }

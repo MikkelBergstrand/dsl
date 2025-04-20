@@ -14,5 +14,3 @@ func eval(func (int) bool evalFunc) int {
 echo(eval((int x) bool {
   return x == 5;
 }));
-
-
