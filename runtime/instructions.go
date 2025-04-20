@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"dsl/color"
+	"dsl/structure"
 	"dsl/variables"
 	"fmt"
 	"slices"
@@ -133,11 +134,11 @@ func (instr *InstrJmp) Execute(runtime *Runtime) {
 }
 
 type InstrJmpVar struct {
-	FunctionPointer variables.FunctionPointer
+	Label string
 }
 
 func (instr *InstrJmpVar) Execute(runtime *Runtime) {
-	runtime.Programcounter = runtime.GetLabel(string(instr.FunctionPointer)) - 1
+	runtime.Programcounter = runtime.GetLabel(instr.Label) - 1
 }
 
 type InstrJmpIf struct {
@@ -160,6 +161,24 @@ func (instr *InstrLoadImmediate) Execute(runtime *Runtime) {
 	runtime.Set(instr.Dest, instr.Value)
 }
 
+type InstrLoadFunction struct {
+	Symbol variables.Symbol
+	Label  string
+}
+
+func (instr *InstrLoadFunction) Execute(runtime *Runtime) {
+	// Copy the current address stack.
+	var address_stack structure.Stack[int]
+	src_address_stack := runtime.CallStack.Peek().AddressStack
+	for i := range src_address_stack {
+		address_stack.Push(src_address_stack[i])
+	}
+	runtime.Set(instr.Symbol, variables.FunctionVar{
+		Label:        instr.Label,
+		AddressStack: address_stack,
+	})
+}
+
 func (instr *InstrAssign) Execute(runtime *Runtime) {
 	runtime.Set(instr.Dest, runtime.Get(instr.Source))
 }
@@ -176,7 +195,6 @@ type InstrCallFunction struct {
 	PreludeLength   int
 	Arguments       []variables.Symbol
 	RetVal          variables.Symbol
-	FuncScopeOffset int
 	SymbolicLabel   variables.Symbol
 }
 
@@ -187,7 +205,7 @@ func (instr *InstrCallFunction) Execute(runtime *Runtime) {
 		arg_values = append(arg_values, runtime.Get(instr.Arguments[i]))
 	}
 	//Fetch func_ptr
-	func_ptr := runtime.Get(instr.SymbolicLabel).(variables.FunctionPointer)
+	func_ptr := runtime.Get(instr.SymbolicLabel).(variables.FunctionVar)
 
 	// Bind return value
 	top_ar := runtime.CallStack.PeekRef()
@@ -195,14 +213,16 @@ func (instr *InstrCallFunction) Execute(runtime *Runtime) {
 	fmt.Println("Bound ret val to", top_ar.Retval)
 
 	// Account for prelude length
-	runtime.PushCall(instr.PreludeLength, instr.FuncScopeOffset)
+	runtime.PushCall(instr.PreludeLength, func_ptr.AddressStack)
 
 	// Once "inside" the function, load argument values
 	for i := range arg_values {
 		runtime.Set(variables.Symbol{Offset: i, Scope: 0, Type: instr.Arguments[i].Type}, arg_values[i])
 	}
+
+	//Then, jump to the function's label
 	jmp_instr := InstrJmpVar{
-		FunctionPointer: func_ptr,
+		Label: func_ptr.Label,
 	}
 	jmp_instr.Execute(runtime)
 }

@@ -1,6 +1,7 @@
 package variables
 
 import (
+	"dsl/structure"
 	"fmt"
 	"strings"
 )
@@ -27,7 +28,7 @@ func (arg TypeDefinition) String() string {
 	s := ""
 	s += arg.BaseType.String()
 
-	if arg.BaseType == FUNC_PTR {
+	if arg.BaseType == FUNC {
 		s += " ("
 		var arg_strings []string
 		for _, arg := range arg.ArgumentList {
@@ -47,7 +48,7 @@ func (a TypeDefinition) Equals(b TypeDefinition) bool {
 		return false
 	}
 
-	if a.BaseType == FUNC_PTR {
+	if a.BaseType == FUNC {
 		if len(a.ArgumentList) != len(b.ArgumentList) {
 			return false
 		}
@@ -66,7 +67,10 @@ func (a TypeDefinition) Equals(b TypeDefinition) bool {
 }
 
 // Holds the label of the function it is referring to.
-type FunctionPointer string
+type FunctionVar struct {
+	Label        string
+	AddressStack structure.Stack[int]
+}
 
 // Verify an argument list of symbols.
 // If the argument list length and type of each argument does not match, return false.

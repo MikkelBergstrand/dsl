@@ -59,13 +59,13 @@ func (ar *ActivationRegister) PopAddress() {
 	ar.StackTop = ar.AddressStack.Pop()
 }
 
-func (runtime *Runtime) PushCall(offset int, relativeFunctionSymbol int) {
+func (runtime *Runtime) PushCall(offset int, func_address_stack structure.Stack[int]) {
 	// The address stack in the function must have an address stack equal to how it looked
 	// when the function was defined.
 	top_of_callstack := runtime.CallStack.Peek()
 	var addr_stack structure.Stack[int]
-	for i := range len(top_of_callstack.AddressStack)-relativeFunctionSymbol {
-		addr_stack.Push(top_of_callstack.AddressStack[i])
+	for i := range func_address_stack {
+		addr_stack.Push(func_address_stack[i])
 	}
 	// The beginning of the next address stack then begins at the next avaiable address
 	addr_stack.Push(top_of_callstack.StackTop + 1)
@@ -75,7 +75,7 @@ func (runtime *Runtime) PushCall(offset int, relativeFunctionSymbol int) {
 		AddressBegin: top_of_callstack.StackTop + 1,
 	})
 
-	fmt.Println("PushCall with AR = ", runtime.CallStack.Peek(), relativeFunctionSymbol)
+	fmt.Println("PushCall with AR = ", runtime.CallStack.Peek(), func_address_stack)
 }
 
 func (runtime *Runtime) PopCall() {

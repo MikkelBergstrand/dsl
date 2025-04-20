@@ -77,7 +77,7 @@ func main() {
 
 func generateGlobalFunctions(rt *runtime.Runtime, storage *storage.Storage) {
 	def := variables.TypeDefinition{
-		BaseType: variables.FUNC_PTR,
+		BaseType: variables.FUNC,
 		ArgumentList: []variables.Argument{
 			{
 				Definition: variables.TypeDefinition{

@@ -40,6 +40,16 @@ func intval(s string) int {
 	return intval
 }
 
+func integerArithmetic(words []any, storage *storage.Storage, op runtime.Operator) variables.Symbol {
+	new_addr := storage.NewLiteral(variables.TypeDefinition{BaseType: variables.INT})
+	storage.LoadInstruction(&runtime.InstrArithmetic{
+		A:        words[0].(variables.Symbol),
+		B:        words[2].(variables.Symbol),
+		Result:   new_addr,
+		Operator: op,
+	})
+	return new_addr
+}
 func validateBooleanArithmetic(a variables.Symbol, b variables.Symbol, op runtime.BooleanOperator) error {
 	if a.Type.BaseType != b.Type.BaseType || !op.IsValidFor(a.Type.BaseType) {
 		return fmt.Errorf("invalid type comparison of %s and %s", a.Type, b.Type)
@@ -75,45 +85,29 @@ func booleanArithmetic(words []any, s *storage.Storage, op runtime.BooleanOperat
 	return newaddr
 }
 
+func doAssignment(src variables.Symbol, dest variables.Symbol, storage *storage.Storage) variables.Symbol {
+	if !src.Type.Equals(dest.Type) {
+		log.Fatalf("invalid type assignment: expected %s, got %s", src.Type.String(), dest.Type.String())
+	}
+
+	storage.LoadInstruction(&runtime.InstrAssign{
+		Source: src,
+		Dest:   dest,
+	})
+	return dest
+}
+
 func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Runtime) any {
 	fmt.Println(rule_id, words)
 	switch rule_id {
 	case 3:
-		new_addr := storage.NewLiteral(variables.TypeDefinition{BaseType: variables.INT})
-		storage.LoadInstruction(&runtime.InstrArithmetic{
-			A:        words[0].(variables.Symbol),
-			B:        words[2].(variables.Symbol),
-			Result:   new_addr,
-			Operator: runtime.ADD,
-		})
-		return new_addr
+		return integerArithmetic(words, storage, runtime.ADD)
 	case 4:
-		new_addr := storage.NewLiteral(variables.TypeDefinition{BaseType: variables.INT})
-		storage.LoadInstruction(&runtime.InstrArithmetic{
-			A:        words[0].(variables.Symbol),
-			B:        words[2].(variables.Symbol),
-			Result:   new_addr,
-			Operator: runtime.SUB,
-		})
-		return new_addr
+		return integerArithmetic(words, storage, runtime.SUB)
 	case 6:
-		new_addr := storage.NewLiteral(variables.TypeDefinition{BaseType: variables.INT})
-		storage.LoadInstruction(&runtime.InstrArithmetic{
-			A:        words[0].(variables.Symbol),
-			B:        words[2].(variables.Symbol),
-			Result:   new_addr,
-			Operator: runtime.MULT,
-		})
-		return new_addr
+		return integerArithmetic(words, storage, runtime.MULT)
 	case 7:
-		new_addr := storage.NewLiteral(variables.TypeDefinition{BaseType: variables.INT})
-		storage.LoadInstruction(&runtime.InstrArithmetic{
-			A:        words[0].(variables.Symbol),
-			B:        words[2].(variables.Symbol),
-			Result:   new_addr,
-			Operator: runtime.DIV,
-		})
-		return new_addr
+		return integerArithmetic(words, storage, runtime.DIV)
 	case 10: //New integer literal
 		addr := storage.NewLiteral(variables.TypeDefinition{BaseType: variables.INT})
 		storage.LoadInstruction(&runtime.InstrLoadImmediate{
@@ -135,26 +129,14 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			log.Fatal(err)
 		}
 
-		if !src.Type.Equals(_type) {
-			log.Fatalf("invalid type assignment: expected %s, got %s", _type.String(), src.Type.String())
-		}
-
-		storage.LoadInstruction(&runtime.InstrAssign{
-			Source: src,
-			Dest:   *addr,
-		})
-		return *addr
+		return doAssignment(src, *addr, storage)
 	case 13: // Reassignment of integer, e.g. a = 3
 		addr, err := storage.GetVarAddr(words[0].(string))
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		storage.LoadInstruction(&runtime.InstrAssign{
-			Source: words[2].(variables.Symbol),
-			Dest:   addr,
-		})
-		return addr
+		return doAssignment(words[2].(variables.Symbol), addr, storage)
 	case 16: // Declare scope
 		storage.LoadInstruction(&runtime.InstrBeginScope{})
 		storage.NewScope()
@@ -169,7 +151,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		if err != nil {
 			log.Fatal(err)
 		}
-		if sym.Type.BaseType != variables.FUNC_PTR {
+		if sym.Type.BaseType != variables.FUNC {
 			log.Fatalf("attempting to call %s, a non-function variable", func_name)
 		}
 
@@ -177,15 +159,10 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			log.Fatalf("Argument list to function %s invalid\n", func_name)
 		}
 
-		// Bit hacky, but from the perspective of the new function,
-		// the arguments are located in the above scope. Hence, we must
-		// increment the scope to account for this.
-
 		ret_val := storage.NewLiteral(*sym.Type.ReturnType)
 		storage.LoadInstruction(&runtime.InstrCallFunction{
 			PreludeLength:   1,
 			RetVal:          ret_val,
-			FuncScopeOffset: sym.Scope,
 			Arguments:       arg_list,
 			SymbolicLabel:   sym,
 		})
@@ -243,7 +220,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		ret_type := words[4].(variables.TypeDefinition)
 
 		def := variables.TypeDefinition{
-			BaseType:     variables.FUNC_PTR,
+			BaseType:     variables.FUNC,
 			ArgumentList: arg_list,
 			ReturnType:   &ret_type,
 		}
@@ -370,14 +347,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		storage.NewLabel(label)
 		return label
 	case 59: // arithmetic: modulo
-		new_addr := storage.NewLiteral(variables.TypeDefinition{BaseType: variables.INT})
-		storage.LoadInstruction(&runtime.InstrArithmetic{
-			A:        words[0].(variables.Symbol),
-			B:        words[2].(variables.Symbol),
-			Result:   new_addr,
-			Operator: runtime.MOD,
-		})
-		return new_addr
+		return integerArithmetic(words, storage, runtime.MOD)
 	case 60: // return Expr
 		storage.LoadInstruction(&runtime.InstrExitFunction{
 			RetVal: words[1].(variables.Symbol),
@@ -396,7 +366,7 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		}
 
 		return variables.TypeDefinition{
-			BaseType:     variables.FUNC_PTR,
+			BaseType:     variables.FUNC,
 			ArgumentList: arg_list,
 			ReturnType:   &return_type,
 		}

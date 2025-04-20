@@ -42,17 +42,12 @@ func (s *Storage) NewFunction(name string, definition variables.TypeDefinition) 
 	}
 
 	label := s.NewAutoLabel()
-
-	s.LoadInstruction(&runtime.InstrLoadImmediate{
-		Dest:  *func_symbol,
-		Value: variables.FunctionPointer(label),
+	s.LoadInstruction(&runtime.InstrLoadFunction{
+		Symbol: *func_symbol,
+		Label:  label,
 	})
 
 	s.newFunctionScope(definition)
-
-	// Make the function visible in the function's parent scope
-	fmt.Println("Declared new function ", name, definition, "with label", label)
-
 	s.NewLabel(label)
 }
 

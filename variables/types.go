@@ -11,14 +11,13 @@ const (
 	INVALID Type = iota
 	INT     Type = iota
 	BOOL
+	FUNC
 	FUNC_PTR
 	NONE
 )
 
 func TypeFromString(s string) (Type, error) {
 	switch s {
-	case "fptr":
-		return FUNC_PTR, nil
 	case "int":
 		return INT, nil
 	case "bool":
@@ -38,6 +37,8 @@ func (t Type) String() string {
 		return "bool"
 	case NONE:
 		return "void"
+	case FUNC:
+		return "func"
 	case FUNC_PTR:
 		return "func_ptr"
 	case INVALID:
