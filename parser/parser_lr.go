@@ -215,7 +215,7 @@ func CreateLRParser(grammar tokens.Grammar, cfg CFG, first FirstSet) LRParser {
 		gotoTable[i] = make([]int, len(grammar.NonTerminals)-1)
 
 		for j := range actionTable[i] {
-			actionTable[i][j] = Action{-1, -1}
+			actionTable[i][j] = Action{Type: -1, Value: -1}
 		}
 		for j := range gotoTable[i] {
 			gotoTable[i][j] = -1
@@ -233,7 +233,8 @@ func CreateLRParser(grammar tokens.Grammar, cfg CFG, first FirstSet) LRParser {
 				cc_j := _goto(cc_i, x)
 				set = cc_j >= 0
 				if set {
-					actionTable[cc_i][grammar.MapToArrayindex(x)] = Action{
+					idx := grammar.MapToArrayindex(x)
+					actionTable[cc_i][idx] = Action{
 						Type:  ACTION_SHIFT,
 						Value: cc_j,
 					}
@@ -245,7 +246,8 @@ func CreateLRParser(grammar tokens.Grammar, cfg CFG, first FirstSet) LRParser {
 					Type: ACTION_ACCEPT,
 				}
 			} else if !set && item.dot_pos == len(rule.B) {
-				actionTable[cc_i][grammar.MapToArrayindex(item.lookahead)] = Action{
+				idx := grammar.MapToArrayindex(item.lookahead)
+				actionTable[cc_i][idx] = Action{
 					Type:  ACTION_REDUCE,
 					Value: item.rule_id,
 				}
@@ -258,7 +260,8 @@ func CreateLRParser(grammar tokens.Grammar, cfg CFG, first FirstSet) LRParser {
 			}
 			cc_j := _goto(cc_i, nt)
 			if cc_j >= 0 {
-				gotoTable[cc_i][grammar.MapToArrayindex(nt)] = cc_j
+				idx := grammar.MapToArrayindex(nt)
+				gotoTable[cc_i][idx] = cc_j
 			}
 		}
 	}

@@ -1,16 +1,18 @@
 
-func a() int {
-  return 5;
+func theFunc(int x) bool {
+  return x > 3;
 }
 
-func b(int a) int {
-  return a;
+func eval(func (int) bool evalFunc) int {
+  if evalFunc(5){
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
-echo(a());
+echo(eval((int x) bool {
+  return x == 5;
+}));
 
-func () int ptr = a;
 
-echo(ptr());
-
-echo(b(19));

@@ -94,31 +94,31 @@ func (cfg CFG) RuleByIndex(index int) cfg_pattern {
 func CreateCFG() CFG {
 	cfg := NewCFG()
 
-	cfg.addRule(tokens.NTGoal, cfg_alternative{tokens.NTStatementList})
-	cfg.addRule(tokens.NTStatementList, cfg_alternative{tokens.NTStatement})
-	cfg.addRule(tokens.NTStatementList, cfg_alternative{tokens.NTStatement, tokens.NTStatementList})
+	cfg.addRule(tokens.NTGoal, cfg_alternative{tokens.NTStatementList})                              // 1
+	cfg.addRule(tokens.NTStatementList, cfg_alternative{tokens.NTStatement})                         // 2
+	cfg.addRule(tokens.NTStatementList, cfg_alternative{tokens.NTStatement, tokens.NTStatementList}) // 3
 
-	cfg.addRule(tokens.NTNExpr, cfg_alternative{tokens.NTNExpr, tokens.ItemOpPlus, tokens.NTTerm})
-	cfg.addRule(tokens.NTNExpr, cfg_alternative{tokens.NTNExpr, tokens.ItemOpMinus, tokens.NTTerm})
-	cfg.addRule(tokens.NTNExpr, cfg_alternative{tokens.NTTerm})
+	cfg.addRule(tokens.NTNExpr, cfg_alternative{tokens.NTNExpr, tokens.ItemOpPlus, tokens.NTTerm})  // 4
+	cfg.addRule(tokens.NTNExpr, cfg_alternative{tokens.NTNExpr, tokens.ItemOpMinus, tokens.NTTerm}) // 5
+	cfg.addRule(tokens.NTNExpr, cfg_alternative{tokens.NTTerm})                                     // 6
 
-	cfg.addRule(tokens.NTTerm, cfg_alternative{tokens.NTTerm, tokens.ItemOpMult, tokens.NTFactor})
-	cfg.addRule(tokens.NTTerm, cfg_alternative{tokens.NTTerm, tokens.ItemOpDiv, tokens.NTFactor})
-	cfg.addRule(tokens.NTTerm, cfg_alternative{tokens.NTFactor})
+	cfg.addRule(tokens.NTTerm, cfg_alternative{tokens.NTTerm, tokens.ItemOpMult, tokens.NTFactor}) // 7
+	cfg.addRule(tokens.NTTerm, cfg_alternative{tokens.NTTerm, tokens.ItemOpDiv, tokens.NTFactor})  // 8
+	cfg.addRule(tokens.NTTerm, cfg_alternative{tokens.NTFactor})                                   // 9
 
 	cfg.addRules(tokens.NTFactor, []cfg_alternative{
-		{tokens.ItemParOpen, tokens.NTExpr, tokens.ItemParClosed},
-		{tokens.ItemNumber},
-		{tokens.ItemIdentifier},
+		{tokens.ItemParOpen, tokens.NTExpr, tokens.ItemParClosed}, // 10
+		{tokens.ItemNumber},     // 11
+		{tokens.ItemIdentifier}, // 12
 	})
 
 	cfg.addRules(tokens.NTStatement, []cfg_alternative{
-		{tokens.NTVarType, tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTNExpr, tokens.ItemSemicolon},
-		{tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTExpr, tokens.ItemSemicolon},
-		{tokens.NTExpr, tokens.ItemSemicolon},
+		{tokens.NTVarType, tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTExpr, tokens.ItemSemicolon}, // 13
+		{tokens.ItemIdentifier, tokens.ItemEquals, tokens.NTExpr, tokens.ItemSemicolon},                   // 14
+		{tokens.NTExpr, tokens.ItemSemicolon},                                                             // 15
 	})
 
-	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.NTScopeBegin, tokens.NTStatement, tokens.NTScopeClose})
+	cfg.addRule(tokens.NTStatement, cfg_alternative{tokens.NTScopeBegin, tokens.NTStatement, tokens.NTScopeClose}) // 16
 
 	cfg.addRule(tokens.NTScopeBegin, cfg_alternative{tokens.ItemScopeOpen})
 	cfg.addRule(tokens.NTScopeClose, cfg_alternative{tokens.ItemScopeClose})
@@ -224,7 +224,10 @@ func CreateCFG() CFG {
 		cfg_alternative{tokens.ItemIdentifier, tokens.ItemParOpen, tokens.ItemParClosed, tokens.NTVarType})
 	//66 - Function call, no arguments
 	cfg.addRule(tokens.NTFunctionCall, cfg_alternative{tokens.ItemIdentifier, tokens.ItemParOpen, tokens.ItemParClosed})
-
+	//67 - Implicit function definition
+	cfg.addRule(tokens.NTExpr, cfg_alternative{tokens.NTImplicitFunctionDefinition, tokens.NTFunctionBody})
+	//68 - Implicit function definition header
+	cfg.addRule(tokens.NTImplicitFunctionDefinition, cfg_alternative{tokens.ItemParOpen, tokens.NTArgumentDeclarationList, tokens.ItemParClosed, tokens.NTVarType})
 	fmt.Println("Num rules: ", len(cfg._array))
 	cfg.compile()
 

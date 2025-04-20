@@ -51,6 +51,20 @@ func (s *Storage) NewFunction(name string, definition variables.TypeDefinition) 
 	s.NewLabel(label)
 }
 
+func (s *Storage) NewImplicitFunction(definition variables.TypeDefinition) variables.Symbol {
+	func_symbol := s.NewLiteral(definition)
+	label := s.NewAutoLabel()
+
+	s.LoadInstruction(&runtime.InstrLoadFunction{
+		Symbol: func_symbol,
+		Label:  label,
+	})
+
+	s.newFunctionScope(definition)
+	s.NewLabel(label)
+	return func_symbol 
+}
+
 func (s *Storage) newFunctionScope(definition variables.TypeDefinition) {
 	s.NewScope()
 

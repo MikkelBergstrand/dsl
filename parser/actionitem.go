@@ -402,13 +402,25 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		storage.NewFunction(words[0].(string), def)
 		return def
 	case 66: // Call function, 0 arguments
-		var arg_list []variables.Symbol 
+		var arg_list []variables.Symbol
 		func_name := words[0].(string)
 		sym, err := doFunctionCall(func_name, arg_list, storage)
 		if err != nil {
 			log.Fatal(err)
 		}
 		return sym
+	case 67: // Implicit function definition: TypeDefiniiton + FunctionBody
+		return words[0].(variables.Symbol)
+	case 68: // New implicit function header "(arg_list) ret_type"
+		arg_list := words[1].(List[variables.Argument]).Iterate()
+		ret_type := words[3].(variables.TypeDefinition)
+
+		def := variables.TypeDefinition{
+			BaseType:     variables.FUNC,
+			ArgumentList: arg_list,
+			ReturnType:   &ret_type,
+		}
+		return storage.NewImplicitFunction(def)
 	}
 	return words[0]
 }

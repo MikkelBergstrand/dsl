@@ -88,6 +88,7 @@ const (
 	NTEndConditionalScope
 	NTBeginElseIf
 	NTTypeList
+	NTImplicitFunctionDefinition
 	NONTERMINALS_LENGTH
 )
 
