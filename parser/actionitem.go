@@ -97,6 +97,30 @@ func doAssignment(src variables.Symbol, dest variables.Symbol, storage *storage.
 	return dest
 }
 
+func doFunctionCall(name string, arguments []variables.Symbol, storage *storage.Storage) (variables.Symbol, error) {
+	sym, err := storage.GetVarAddr(name)
+	if err != nil {
+		return sym, err
+	}
+	if sym.Type.BaseType != variables.FUNC {
+		return sym, fmt.Errorf("attempting to call %s, a non-function variable", name)
+	}
+
+	if !sym.Type.ArgumentList.ValidateArgumentList(arguments) {
+		return sym, fmt.Errorf("Argument list to function %s invalid\n", name)
+	}
+
+	ret_val := storage.NewLiteral(*sym.Type.ReturnType)
+	storage.LoadInstruction(&runtime.InstrCallFunction{
+		PreludeLength: 1,
+		RetVal:        ret_val,
+		Arguments:     arguments,
+		SymbolicLabel: sym,
+	})
+
+	return ret_val, nil
+}
+
 func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Runtime) any {
 	fmt.Println(rule_id, words)
 	switch rule_id {
@@ -145,30 +169,12 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 		storage.DestroyScope()
 	case 19: // call function e.g. echo ( 0 )
 		arg_list := (words[2].(List[variables.Symbol])).Iterate()
-
 		func_name := words[0].(string)
-		sym, err := storage.GetVarAddr(func_name)
+		sym, err := doFunctionCall(func_name, arg_list, storage)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if sym.Type.BaseType != variables.FUNC {
-			log.Fatalf("attempting to call %s, a non-function variable", func_name)
-		}
-
-		if !sym.Type.ArgumentList.ValidateArgumentList(arg_list) {
-			log.Fatalf("Argument list to function %s invalid\n", func_name)
-		}
-
-		ret_val := storage.NewLiteral(*sym.Type.ReturnType)
-		storage.LoadInstruction(&runtime.InstrCallFunction{
-			PreludeLength:   1,
-			RetVal:          ret_val,
-			Arguments:       arg_list,
-			SymbolicLabel:   sym,
-		})
-
-		return ret_val
-
+		return sym
 	case 20: //argument list construction, input is "symbol , List"
 		second := words[2].(List[variables.Symbol])
 		return List[variables.Symbol]{
@@ -381,7 +387,28 @@ func DoActions(rule_id int, words []any, storage *storage.Storage, r *runtime.Ru
 			First:  words[0].(variables.TypeDefinition),
 			Second: nil,
 		}
-
+	case 64: //NTTypeVar ->  function () return_type  (no arguments)
+		ret_type := words[3].(variables.TypeDefinition)
+		return variables.TypeDefinition{
+			ReturnType: &ret_type,
+			BaseType:   variables.FUNC,
+		}
+	case 65: //FunctionDefinition: 0 arguments "identifier () return_type"
+		ret_type := words[3].(variables.TypeDefinition)
+		def := variables.TypeDefinition{
+			BaseType:   variables.FUNC,
+			ReturnType: &ret_type,
+		}
+		storage.NewFunction(words[0].(string), def)
+		return def
+	case 66: // Call function, 0 arguments
+		var arg_list []variables.Symbol 
+		func_name := words[0].(string)
+		sym, err := doFunctionCall(func_name, arg_list, storage)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return sym
 	}
 	return words[0]
 }

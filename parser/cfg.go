@@ -123,8 +123,8 @@ func CreateCFG() CFG {
 	cfg.addRule(tokens.NTScopeBegin, cfg_alternative{tokens.ItemScopeOpen})
 	cfg.addRule(tokens.NTScopeClose, cfg_alternative{tokens.ItemScopeClose})
 
-	cfg.addRule(tokens.NTFactor, cfg_alternative{tokens.NTFunction})
-	cfg.addRule(tokens.NTFunction, cfg_alternative{tokens.ItemIdentifier, tokens.ItemParOpen, tokens.NTArgList, tokens.ItemParClosed})
+	cfg.addRule(tokens.NTFactor, cfg_alternative{tokens.NTFunctionCall})
+	cfg.addRule(tokens.NTFunctionCall, cfg_alternative{tokens.ItemIdentifier, tokens.ItemParOpen, tokens.NTArgList, tokens.ItemParClosed})
 	cfg.addRule(tokens.NTArgList, cfg_alternative{tokens.NTArgument, tokens.ItemComma, tokens.NTArgList})
 	cfg.addRule(tokens.NTArgList, cfg_alternative{tokens.NTArgument})
 
@@ -217,6 +217,14 @@ func CreateCFG() CFG {
 	cfg.addRule(tokens.NTTypeList, cfg_alternative{tokens.NTVarType, tokens.ItemComma, tokens.NTTypeList})
 	//63
 	cfg.addRule(tokens.NTTypeList, cfg_alternative{tokens.NTVarType})
+	//64 - Declare type, empty argument list
+	cfg.addRule(tokens.NTVarType, cfg_alternative{tokens.ItemFunction, tokens.ItemParOpen, tokens.ItemParClosed, tokens.NTVarType})
+	//65 - Function definition, no arguments
+	cfg.addRule(tokens.NTFunctionDefinition,
+		cfg_alternative{tokens.ItemIdentifier, tokens.ItemParOpen, tokens.ItemParClosed, tokens.NTVarType})
+	//66 - Function call, no arguments
+	cfg.addRule(tokens.NTFunctionCall, cfg_alternative{tokens.ItemIdentifier, tokens.ItemParOpen, tokens.ItemParClosed})
+
 	fmt.Println("Num rules: ", len(cfg._array))
 	cfg.compile()
 

@@ -65,7 +65,7 @@ const (
 	NTFactor
 	NTScopeBegin
 	NTScopeClose
-	NTFunction
+	NTFunctionCall
 	NTArgument
 	NTArgList
 	NTNExpr

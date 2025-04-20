@@ -1,0 +1,16 @@
+
+func a() int {
+  return 5;
+}
+
+func b(int a) int {
+  return a;
+}
+
+echo(a());
+
+func () int ptr = a;
+
+echo(ptr());
+
+echo(b(19));
