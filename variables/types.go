@@ -12,7 +12,6 @@ const (
 	INT     Type = iota
 	BOOL
 	FUNC
-	FUNC_PTR
 	NONE
 )
 
@@ -39,8 +38,6 @@ func (t Type) String() string {
 		return "void"
 	case FUNC:
 		return "func"
-	case FUNC_PTR:
-		return "func_ptr"
 	case INVALID:
 		return ""
 	}
